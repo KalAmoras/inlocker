@@ -28,12 +28,15 @@ class LockScreenActivity : AppCompatActivity() {
             val passwordDatabase = PasswordDatabase.getInstance(applicationContext)
             passwordDao = passwordDatabase.passwordDao()
 
+            val appPackageName = intent.getStringExtra("chosenApp")
+            Log.d("LockScreenActivity", "Chosen app: $appPackageName")
+
+            val placeholderText = PlaceholderTextHelper.getPlaceholderText(appPackageName)
+            passwordEditText.hint = placeholderText
+
             unlockButton.setOnClickListener {
                 val enteredPassword = passwordEditText.text.toString()
                 Log.d("LockScreenActivity", "Entered password: $enteredPassword")
-
-                val appPackageName = intent.getStringExtra("chosenApp")
-                Log.d("LockScreenActivity", "Chosen app: $appPackageName")
 
                 if (!appPackageName.isNullOrEmpty()) {
                     lifecycleScope.launch {
@@ -45,7 +48,12 @@ class LockScreenActivity : AppCompatActivity() {
 
                         if (passwordItem != null && passwordItem.password == enteredPassword) {
                             AuthStateManager.setAppAuthenticated(applicationContext, appPackageName)
-                            launchApp(appPackageName)
+                            if (appPackageName == "uninstall_protection") {
+                                setResult(RESULT_OK)
+                                finish()
+                            } else {
+                                launchApp(appPackageName)
+                            }
                         } else {
                             Log.d("LockScreenActivity", "Password mismatch or item not found")
                             Toast.makeText(this@LockScreenActivity, "Incorrect password", Toast.LENGTH_SHORT).show()

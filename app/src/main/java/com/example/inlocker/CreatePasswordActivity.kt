@@ -28,12 +28,16 @@ class CreatePasswordActivity : AppCompatActivity() {
         val passwordDatabase = PasswordDatabase.getInstance(applicationContext)
         passwordDao = passwordDatabase.passwordDao()
 
+        val chosenApp = intent.getStringExtra("chosenApp")
+
+        val placeholderText = PlaceholderTextHelper.getPlaceholderTextOnCreatePassword(chosenApp)
+        passwordEditText.hint = placeholderText
+
         saveButton.setOnClickListener {
             val password = passwordEditText.text.toString()
             Log.d("CreatePasswordActivity", "Save button clicked with password: $password")
 
             if (password.isNotBlank()) {
-                val chosenApp = intent.getStringExtra("chosenApp")
                 Log.d("CreatePasswordActivity", "Chosen app: $chosenApp")
 
                 lifecycleScope.launch {

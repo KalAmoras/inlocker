@@ -22,4 +22,7 @@ interface PasswordDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdate(passwordItem: PasswordItem)
+
+    @Query("DELETE FROM password_items")
+    suspend fun deleteAllPasswords()
 }

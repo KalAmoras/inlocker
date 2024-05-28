@@ -45,7 +45,7 @@ class InitializationService : Service() {
         super.onDestroy()
         Log.d("InitializationService", "Service destroyed")
         serviceScope.cancel()
-        restartService()
+//        restartService()
     }
 
     private fun createNotificationChannel() {
@@ -76,33 +76,30 @@ class InitializationService : Service() {
     }
 
     private fun resetAuthStateAndStartAppMonitorService() {
-        GlobalScope.launch(Dispatchers.IO) {
-            AuthStateManager.resetAuthState(applicationContext)
-            Log.d("InitializationService", "Auth state reset")
+        serviceScope.launch {
+            try{
+                Log.d("InitializationService", "Resetting auth state...")
+                AuthStateManager.resetAuthState(applicationContext)
+                Log.d("InitializationService", "Auth state reset")
 
-            updateNotification("Initialization complete. Locked.")
+                updateNotification("Initialization complete. Locked.")
 
-            val monitorServiceIntent = Intent(applicationContext, AppMonitorService::class.java)
-            startService(monitorServiceIntent)
-            stopSelf()
+                val monitorServiceIntent = Intent(applicationContext, AppMonitorService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(monitorServiceIntent)
+                } else {
+                    startService(monitorServiceIntent)
+                }
+
+                Thread.sleep(500)
+
+                val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                notificationManager.cancel(NOTIFICATION_ID)
+            }catch (e: Exception){
+                Log.e("InitializationService", "Error resetting auth state: ${e.message}")
+            } finally {
+                stopSelf()
+            }
         }
-    }
-
-    private fun restartService() {
-        val restartServiceIntent = Intent(applicationContext, InitializationService::class.java).also {
-            it.setPackage(packageName)
-        }
-        val restartServicePendingIntent = PendingIntent.getService(
-            this,
-            1,
-            restartServiceIntent,
-            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
-        )
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        alarmManager.set(
-            AlarmManager.ELAPSED_REALTIME,
-            SystemClock.elapsedRealtime() + 1000,
-            restartServicePendingIntent
-        )
     }
 }

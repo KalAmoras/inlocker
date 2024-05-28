@@ -33,7 +33,8 @@ class AppMonitorService : AccessibilityService() {
 
     companion object {
         private const val CHANNEL_ID = "AppMonitorServiceChannel"
-        private const val NOTIFICATION_ID = 1
+        private const val CHANNEL_NAME = "App Monitor Service"
+        private const val NOTIFICATION_ID = 2
     }
 
     override fun onServiceConnected() {

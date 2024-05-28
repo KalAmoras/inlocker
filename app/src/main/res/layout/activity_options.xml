@@ -23,7 +23,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Set the interval to check and start if InLocker is turned off"/>
+        android:text="Set the interval to check and start if InLocker is turned off."/>
 
     <EditText
         android:id="@+id/intervalEditText"
@@ -42,7 +42,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Clean all apps passwords"/>
+        android:text="Delete all apps passwords"/>
     <Button
         android:id="@+id/deletePasswordsButton"
         android:layout_width="wrap_content"
@@ -61,7 +61,10 @@
         android:text="Reset Authentication State"
         android:layout_marginBottom="30sp"/>
 
-
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enable this app as a device admin, protecting it from uninstallation"/>
     <Button
         android:id="@+id/enableUninstallProtectionButton"
         android:layout_width="wrap_content"

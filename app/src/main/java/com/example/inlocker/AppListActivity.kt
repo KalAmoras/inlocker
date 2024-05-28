@@ -1,11 +1,13 @@
 package com.example.inlocker
 
+import AppListAdapter
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import androidx.appcompat.widget.SearchView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -37,6 +39,8 @@ class AppListActivity : AppCompatActivity() {
         passwordDao = passwordDatabase.passwordDao()
 
         displayInstalledApps()
+        setupSearchView()
+
         CoroutineScope(Dispatchers.IO).launch {
             val passwordList = passwordDao.getAllPasswords()
             withContext(Dispatchers.Main) {
@@ -67,6 +71,20 @@ class AppListActivity : AppCompatActivity() {
             appInfoList.add(resolveInfo.activityInfo.applicationInfo)
         }
         return appInfoList
+    }
+
+    private fun setupSearchView() {
+        val searchView: SearchView = findViewById(R.id.appSearchView)
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                return false
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                adapter.filter(newText ?: "")
+                return true
+            }
+        })
     }
 
     fun onSelectPasswordButtonClick(view: View) {
