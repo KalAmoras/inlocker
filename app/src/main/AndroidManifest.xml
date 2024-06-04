@@ -73,7 +73,8 @@
 
         <activity
             android:name=".AppOptionsActivity"
-            android:label="App Options Activity" />
+            android:label="App Options Activity"
+            />
 
         <receiver
             android:name=".BootReceiver"

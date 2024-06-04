@@ -48,8 +48,12 @@ class LockScreenActivity : AppCompatActivity() {
 
                         if (passwordItem != null && passwordItem.password == enteredPassword) {
                             AuthStateManager.setAppAuthenticated(applicationContext, appPackageName)
-                            if (appPackageName == "uninstall_protection") {
-                                setResult(RESULT_OK)
+                            if (appPackageName == "uninstall_protection" || appPackageName == "delete_all_passwords") {
+                                AuthStateManager.setAppAuthenticated(applicationContext, appPackageName)
+                                val resultIntent = Intent()
+                                resultIntent.putExtra("chosenApp", appPackageName)
+                                setResult(RESULT_OK, resultIntent)
+                                Log.d("LockScreenActivity", "Setting RESULT_OK with chosenApp: $appPackageName")
                                 finish()
                             } else {
                                 launchApp(appPackageName)

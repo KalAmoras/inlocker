@@ -1,19 +1,35 @@
 package com.example.inlocker
 
-import AppListAdapter
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import androidx.appcompat.widget.SearchView
 import android.widget.Toast
-import androidx.activity.viewModels
+import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import androidx.compose.foundation.lazy.items
+import com.example.inlocker.ui.theme.InLockerTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -21,71 +37,65 @@ import kotlinx.coroutines.withContext
 
 class AppListActivity : AppCompatActivity() {
 
-    private lateinit var appListRecyclerView: RecyclerView
-    private lateinit var adapter: AppListAdapter
     private lateinit var passwordDao: PasswordDao
-
     private val REQUEST_CODE_PASSWORD = 100
-
+    private lateinit var installedApps: List<ApplicationInfo>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.app_list_layout)
+        setContent {
+            InLockerTheme {
+                val context = LocalContext.current
+                passwordDao = PasswordDatabase.getInstance(context).passwordDao()
+                installedApps = getAllInstalledApps()
 
-        appListRecyclerView = findViewById(R.id.appRecyclerView)
-        appListRecyclerView.layoutManager = LinearLayoutManager(this)
+                var filteredApps by remember { mutableStateOf(installedApps) }
+                var selectedPasswordItem by remember { mutableStateOf<PasswordItem?>(null) }
 
-        val passwordDatabase = PasswordDatabase.getInstance(applicationContext)
-        passwordDao = passwordDatabase.passwordDao()
-
-        displayInstalledApps()
-        setupSearchView()
-
-        CoroutineScope(Dispatchers.IO).launch {
-            val passwordList = passwordDao.getAllPasswords()
-            withContext(Dispatchers.Main) {
-                for (passwordItem in passwordList) {
-                    Log.d("AppListActivity", "App: ${passwordItem.chosenApp}, Password: ${passwordItem.password}")
+                LaunchedEffect(Unit) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        val passwordList = passwordDao.getAllPasswords()
+                        withContext(Dispatchers.Main) {
+                            for (passwordItem in passwordList) {
+                                Log.d("AppListActivity", "App: ${passwordItem.chosenApp}, Password: ${passwordItem.password}")
+                            }
+                        }
+                    }
                 }
+
+                AppListScreen(
+                    apps = filteredApps,
+                    selectedPasswordItem = selectedPasswordItem,
+                    onSelectPassword = { appInfo ->
+                        val chosenAppPackageName = appInfo.packageName
+                        val intent = Intent(context, CreatePasswordActivity::class.java)
+                        intent.putExtra("chosenApp", chosenAppPackageName)
+                        startActivityForResult(intent, REQUEST_CODE_PASSWORD)
+                    },
+                    onSearch = { query ->
+                        filteredApps = if (query.isEmpty()) {
+                            installedApps
+                        } else {
+                            installedApps.filter {
+                                it.loadLabel(packageManager).toString().contains(query, ignoreCase = true)
+                            }
+                        }
+                    }
+                )
             }
         }
     }
 
-    private fun displayInstalledApps() {
-        val installedApps = getAllInstalledApps()
-        if (installedApps.isNotEmpty()) {
-            adapter = AppListAdapter(this, installedApps, null)
-            appListRecyclerView.adapter = adapter
-        } else {
-            Toast.makeText(this, "No apps found.", Toast.LENGTH_SHORT).show()
-        }
-    }
 
     private fun getAllInstalledApps(): List<ApplicationInfo> {
         val packageManager = packageManager
-        val intent = Intent(Intent.ACTION_MAIN, null)
-        intent.addCategory(Intent.CATEGORY_LAUNCHER)
-        val resolveInfoList = packageManager.queryIntentActivities(intent, 0)
-        val appInfoList = mutableListOf<ApplicationInfo>()
-        for (resolveInfo in resolveInfoList) {
-            appInfoList.add(resolveInfo.activityInfo.applicationInfo)
+        val intent = Intent(Intent.ACTION_MAIN, null).apply {
+            addCategory(Intent.CATEGORY_LAUNCHER)
         }
-        return appInfoList
+        return packageManager.queryIntentActivities(intent, 0)
+            .map { it.activityInfo.applicationInfo }
     }
 
-    private fun setupSearchView() {
-        val searchView: SearchView = findViewById(R.id.appSearchView)
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                return false
-            }
-
-            override fun onQueryTextChange(newText: String?): Boolean {
-                adapter.filter(newText ?: "")
-                return true
-            }
-        })
-    }
 
     fun onSelectPasswordButtonClick(view: View) {
         val appInfo = view.tag as? ApplicationInfo
@@ -129,4 +139,52 @@ class AppListActivity : AppCompatActivity() {
             }
         }
     }
+
+    @Composable
+    fun AppListScreen(
+        apps: List<ApplicationInfo>,
+        selectedPasswordItem: PasswordItem?,
+        onSelectPassword: (ApplicationInfo) -> Unit,
+        onSearch: (String) -> Unit
+    ) {
+        var query by remember { mutableStateOf("") }
+
+        Column(modifier = Modifier.fillMaxSize()) {
+            Text(
+                text = "App List",
+                fontSize = 24.sp,
+                modifier = Modifier.padding(16.dp)
+            )
+            OutlinedTextField(
+                value = query,
+                onValueChange = {
+                    query = it
+                    onSearch(it)
+                },
+                label = { Text(text = "Search apps") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            )
+            LazyColumn {
+                items(apps) { app ->
+                    AppListItem(appInfo = app, selectedPasswordItem = selectedPasswordItem, onSelectPassword = onSelectPassword)
+                }
+            }
+        }
+    }
+
+    @Preview(showBackground = true)
+    @Composable
+    private fun AppListScreenPreview() {
+        InLockerTheme {
+            AppListScreen(
+                apps = emptyList(),
+                selectedPasswordItem = null,
+                onSelectPassword = {},
+                onSearch = {}
+            )
+        }
+    }
+
 }
