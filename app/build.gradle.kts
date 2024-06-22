@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.inlocker"
+    namespace = "com.kalsys.inlocker"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.inlocker"
+        applicationId = "com.kalsys.inlocker"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
@@ -31,6 +31,7 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
@@ -48,8 +49,13 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "META-INF/INDEX.LIST"
+            excludes += "META-INF/DEPENDENCIES"
+            excludes += "META-INF/LICENSE.md"
+            excludes += "META-INF/NOTICE.md"
         }
     }
+
     sourceSets {
         getByName("main") {
             java.srcDir("build/generated/ksp/main/kotlin")
@@ -75,14 +81,34 @@ dependencies {
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.room.common)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.compose.material)
+    implementation(libs.play.services.auth.base)
     ksp(libs.androidx.room.compiler)
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.0-RC3")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.0")
     implementation("com.google.android.material:material:1.12.0")
-    debugImplementation("androidx.compose.ui:ui-tooling:1.6.7")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.6.7")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.1")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.6.8")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.6.8")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.2")
     implementation("androidx.activity:activity-ktx:1.9.0")
     implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("androidx.compose.material:material-icons-extended:1.6.8")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+
+    // Google API Client dependencies
+    implementation("com.google.api-client:google-api-client:2.6.0")
+    implementation("com.google.api-client:google-api-client-android:2.6.0")
+    implementation("com.google.api-client:google-api-client-gson:2.6.0")
+
+    // Gmail API
+    implementation("com.google.apis:google-api-services-gmail:v1-rev20240520-2.0.0")
+
+    // Optional: For OAuth2
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.23.0")
+
+    // Mail dependencies (if needed)
+    implementation("com.sun.mail:android-mail:1.6.7")
+    implementation("com.sun.mail:android-activation:1.6.7")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -90,5 +116,4 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-
 }

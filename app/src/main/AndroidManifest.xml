@@ -1,16 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.kalsys.inlocker">
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
-
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
+    <uses-permission android:name="android.permission.USE_CREDENTIALS" />
+    <queries>
+        <package android:name="com.miui.securitycenter" />
+        <package android:name="com.miui.permcenter.permissions.AppPermissionsEditorActivity" />
+    </queries>
 
 
     <application
@@ -36,7 +45,7 @@
         </activity>
 
         <service
-            android:name="com.example.inlocker.AppMonitorService"
+            android:name=".AppMonitorService"
             android:exported="true"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:foregroundServiceType="location">
@@ -61,15 +70,22 @@
 
 
         <activity android:name=".CreatePasswordActivity" />
-        <activity android:name=".PasswordItem" />
+        <activity android:name=".AuthActivity" />
 
-        <activity android:name=".PasswordDao" />
-        <activity android:name=".PasswordDatabase" />
+        <activity android:name=".EmailSettingsActivity" />
+
+        <!--        <activity android:name=".EmailService" />-->
+<!--        <activity android:name=".PasswordItem" />-->
+<!--        <activity android:name=".PasswordDao" />-->
+<!--        <activity android:name=".PasswordDatabase" />-->
 
 
         <activity
             android:name=".AppListActivity"
             android:label="App List Activity" />
+        <activity
+            android:name=".CriticalSettingsActivity"
+            android:label="Critical Settings" />
 
         <activity
             android:name=".AppOptionsActivity"
