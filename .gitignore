@@ -15,4 +15,4 @@
 local.properties
 
 # Ignore client secret files
-client_secret.json
+app/src/main/res/raw/client_secret.json
