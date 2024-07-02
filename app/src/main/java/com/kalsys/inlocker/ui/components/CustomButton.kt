@@ -18,7 +18,7 @@ fun CustomButton(
 ) {
     Button(
         onClick = onClick,
-        colors =  customButtonColors(),
+//        colors =  customButtonColors(),
         modifier = modifier,
         shape = shape
     ) {

@@ -14,10 +14,10 @@ import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun customButtonColors() = ButtonDefaults.buttonColors(
-    containerColor = CustomPrimary, // Default background color
-    contentColor = CustomWhite, // Default text color
-    disabledContainerColor = CustomPrimaryDark, // Background color when disabled
-    disabledContentColor = Color.Gray // Text color when disabled
+    containerColor = CustomPrimary,
+    contentColor = CustomWhite,
+    disabledContainerColor = CustomPrimaryDark,
+    disabledContentColor = Color.Gray
 )
 
 private val DarkColorScheme = darkColorScheme(

@@ -13,7 +13,7 @@ class PasswordCheckerImplementation(
     private val compName: ComponentName
 ) : PasswordChecker {
 
-    private val passwordTypes = listOf("uninstall_protection", "delete_all_passwords")
+    private val passwordTypes = listOf("uninstall_protection", "delete_all_passwords", "email_service")
 
     override suspend fun checkAndRequestPassword(
         context: Context,
@@ -63,6 +63,17 @@ class PasswordCheckerImplementation(
                         Log.d("PasswordCheckerImplementation", "chosenApp inside delete all passwords: $chosenApp")
                     }
                     Log.d("PasswordCheckerImplementation", "Sending result code of delete all passwords to AppOptionsActivity")
+
+                    (context as AppCompatActivity).startActivityForResult(intent, CriticalSettingsActivity.REQUEST_CODE_LOCK_SCREEN)
+                }
+                "email_service" -> {
+                    Log.d("PasswordCheckerImplementation", "Calling intent for email service")
+
+                    val intent = Intent(context, LockScreenActivity::class.java).apply {
+                        putExtra("chosenApp", chosenApp)
+                        Log.d("PasswordCheckerImplementation", "chosenApp inside email_service: $chosenApp")
+                    }
+                    Log.d("PasswordCheckerImplementation", "Sending result code of email service to CriticalSettingsActivity")
 
                     (context as AppCompatActivity).startActivityForResult(intent, CriticalSettingsActivity.REQUEST_CODE_LOCK_SCREEN)
                 }

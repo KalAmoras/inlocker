@@ -14,7 +14,7 @@ class BootReceiver : BroadcastReceiver() {
             val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
             val interval = prefs.getInt("check_interval", 60)
 
-            JobSchedulerUtil.scheduleServiceRestartJob(context, interval)
+            JobSchedulerUtil.scheduleAuthStateResetJob(context, interval)
         }
     }
 }

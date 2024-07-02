@@ -140,7 +140,7 @@ class CreatePasswordActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    val functionalities = listOf("uninstall_protection", "delete_all_passwords")
+                    val functionalities = listOf("uninstall_protection", "delete_all_passwords", "email_service")
 
                     functionalities.forEach { functionality ->
                         val existingPasswordItem = passwordDao.getPasswordItem(functionality)

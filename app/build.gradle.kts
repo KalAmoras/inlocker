@@ -86,6 +86,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.0")
     implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.compose.foundation:foundation:1.6.8")
     debugImplementation("androidx.compose.ui:ui-tooling:1.6.8")
     implementation("androidx.compose.ui:ui-tooling-preview:1.6.8")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.2")
@@ -93,6 +94,7 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("androidx.compose.material:material-icons-extended:1.6.8")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+
 
     // Google API Client dependencies
     implementation("com.google.api-client:google-api-client:2.6.0")

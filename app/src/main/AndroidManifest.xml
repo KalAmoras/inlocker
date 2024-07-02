@@ -58,7 +58,7 @@
         </service>
 
         <service
-            android:name=".RestartJobService"
+            android:name=".AuthStateResetJobService"
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <activity
@@ -70,6 +70,9 @@
 
 
         <activity android:name=".CreatePasswordActivity" />
+
+        <activity android:name=".InstructionActivity" />
+
         <activity android:name=".AuthActivity" />
 
         <activity android:name=".EmailSettingsActivity" />

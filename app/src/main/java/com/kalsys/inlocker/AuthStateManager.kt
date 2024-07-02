@@ -25,6 +25,6 @@ object AuthStateManager {
     fun resetAuthState(context: Context) {
         val prefs = getPreferences(context)
         prefs.edit().clear().apply()
-        Log.d("AuthStateManager", "On InitializationService: Authentication state reset")
+        Log.d("AuthStateManager", "Authentication state reset")
     }
 }

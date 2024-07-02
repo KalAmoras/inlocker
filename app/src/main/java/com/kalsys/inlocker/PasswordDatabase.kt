@@ -6,10 +6,11 @@ import androidx.room.RoomDatabase
 import androidx.room.Database
 
 
-@Database(entities = [PasswordItem::class, EmailEntity::class], version = 2)
+@Database(entities = [PasswordItem::class, EmailEntity::class, Monitor::class], version = 3)
 abstract class PasswordDatabase : RoomDatabase() {
     abstract fun passwordDao(): PasswordDao
     abstract fun emailDao(): EmailDao
+    abstract fun monitorDao(): MonitorDao
 
 
     companion object {

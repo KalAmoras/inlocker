@@ -1,7 +1,6 @@
 package com.kalsys.inlocker
 
 
-import android.accounts.AccountManager
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
@@ -78,7 +77,7 @@ class CriticalSettingsActivity : AppCompatActivity() {
                     onToggleUninstallProtection = { toggleUninstallProtection() },
                     isAdminActive = isAdminActive.value,
                     onSetDefaultPasswords = { setDefaultPassword() },
-                    recoverySettings = { startEmailSettingsActivity() }
+                    onEmailService = { handleEmailService()}
                 )
             }
         }
@@ -178,8 +177,19 @@ class CriticalSettingsActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-    private fun startEmailSettingsActivity() {
-        startActivity(Intent(this, EmailSettingsActivity::class.java))
+    private fun handleEmailService() {
+        lifecycleScope.launch {
+            passwordChecker.checkAndRequestPassword(
+                this@CriticalSettingsActivity,
+                "email_service",
+                {
+                    startActivity(Intent(this@CriticalSettingsActivity, EmailSettingsActivity::class.java))
+                },
+                {
+                    Toast.makeText(this@CriticalSettingsActivity, "Password verification failed", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -211,6 +221,10 @@ class CriticalSettingsActivity : AppCompatActivity() {
                                 Log.d("CriticalSettingsActivity", "Calling deletePasswords()")
                                 deletePasswords()
                             }
+                            "email_service" -> {
+                                Log.d("CriticalSettingsActivity", "Calling emailActivity()")
+                                startActivity(Intent(this@CriticalSettingsActivity, EmailSettingsActivity::class.java))
+                            }
                         }
                     } else {
                         Log.d("CriticalSettingsActivity", "Password type is null")
@@ -241,7 +255,7 @@ class CriticalSettingsActivity : AppCompatActivity() {
         onToggleUninstallProtection: () -> Unit,
         isAdminActive: Boolean,
         onSetDefaultPasswords: () -> Unit,
-        recoverySettings: () -> Unit
+        onEmailService: () -> Unit
     ) {
         var showToastMessage by remember { mutableStateOf<String?>(null) }
 
@@ -334,7 +348,7 @@ class CriticalSettingsActivity : AppCompatActivity() {
                 Spacer(modifier = Modifier.height(3.dp))
                 CustomButton(
                     text = "EmailSettings",
-                    onClick = recoverySettings,
+                    onClick = onEmailService,
                     modifier = Modifier
                         .height(56.dp)
                         .width(152.dp),
@@ -358,7 +372,7 @@ class CriticalSettingsActivity : AppCompatActivity() {
                 onToggleUninstallProtection = { },
                 isAdminActive = false,
                 onSetDefaultPasswords = { },
-                recoverySettings = {}
+                onEmailService = {}
             )
         }
     }

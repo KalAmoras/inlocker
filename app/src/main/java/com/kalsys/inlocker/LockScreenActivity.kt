@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.lifecycleScope
 import com.kalsys.inlocker.ui.components.CustomButton
 import com.kalsys.inlocker.ui.components.PasswordTextField
@@ -24,6 +25,7 @@ import kotlinx.coroutines.withContext
 class LockScreenActivity : AppCompatActivity() {
 
     private lateinit var passwordDao: PasswordDao
+    private lateinit var emailDao: EmailDao
     private lateinit var appPackageName: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,6 +34,7 @@ class LockScreenActivity : AppCompatActivity() {
 
         val passwordDatabase = PasswordDatabase.getInstance(applicationContext)
         passwordDao = passwordDatabase.passwordDao()
+        emailDao = passwordDatabase.emailDao()
 
         appPackageName = intent.getStringExtra("chosenApp") ?: ""
 
@@ -50,7 +53,9 @@ class LockScreenActivity : AppCompatActivity() {
     }
 
     private fun handlePasswordVerification(chosenApp: String) {
-        if (chosenApp == "uninstall_protection" || chosenApp == "delete_all_passwords") {
+        val optionsList = listOf("uninstall_protection", "delete_all_passwords", "email_service")
+
+        if(optionsList.contains(chosenApp)){
             val resultIntent = Intent().apply {
                 putExtra("chosenApp", chosenApp)
             }
@@ -144,7 +149,7 @@ fun LockScreenPreview() {
     InLockerTheme {
         LockScreen(
             appPackageName = "com.example.app",
-            onUnlockClicked = { /* Handle password verification in preview */ }
+            onUnlockClicked = {}
         )
     }
 }
