@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import com.kalsys.inlocker.ui.components.CustomButton
 import com.kalsys.inlocker.ui.theme.InLockerTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -180,14 +182,13 @@ class AppListActivity : AppCompatActivity() {
                     .fillMaxWidth()
                     .padding(16.dp)
             )
-            Button(
+            CustomButton(
                 onClick = onSetDefaultPassword,
                 modifier = Modifier
                     .padding(16.dp)
-                    .fillMaxWidth()
-            ) {
-                Text(text = "Set Default Password for All Apps")
-            }
+                    .width(200.dp),
+                text = "Set Default Password for All Apps"
+            )
             LazyColumn {
                 items(apps) { app ->
                     AppListItem(appInfo = app, selectedPasswordItem = selectedPasswordItem, onSelectPassword = onSelectPassword)

@@ -8,7 +8,7 @@ import android.os.Build
 import android.util.Log
 
 object JobSchedulerUtil {
-    private const val JOB_ID_AUTH_STATE_RESET = 1
+    const val JOB_ID_AUTH_STATE_RESET = 1
 
     fun scheduleAuthStateResetJob(context: Context, intervalMinutes: Int = 60) {
         val componentName = ComponentName(context, AuthStateManager::class.java)
