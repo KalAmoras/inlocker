@@ -279,9 +279,10 @@ fun AppOptionsScreen(
                     )
                     .blur(10.dp, BlurredEdgeTreatment(RoundedCornerShape(10.dp)))
             )
-            PulsingSphere(
-                modifier = Modifier.align(Alignment.Center)
-            )
+            //Activate if you're using Android 12+
+//            PulsingSphere(
+//                modifier = Modifier.align(Alignment.Center)
+//            )
             Column(
                 modifier = Modifier
                     .matchParentSize()

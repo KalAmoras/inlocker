@@ -1,10 +1,10 @@
 package com.kalsys.inlocker
 
-import android.accounts.Account
 import android.accounts.AccountManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -20,12 +20,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import com.google.android.gms.auth.GoogleAuthException
+import android.Manifest
 import com.google.android.gms.common.AccountPicker
-import com.google.android.gms.common.GoogleApiAvailability
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
-import com.google.api.client.googleapis.extensions.android.gms.auth.GooglePlayServicesAvailabilityIOException
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.services.gmail.GmailScopes
@@ -44,11 +44,14 @@ class EmailSettingsActivity : AppCompatActivity() {
     companion object {
         private const val REQUEST_ACCOUNT_PICKER = 1000
         private const val REQUEST_AUTHORIZATION = 1001
+        private const val REQUEST_LOCATION_PERMISSION = 1002
         private const val EMAIL_PREF_KEY = "recipient_email"
         private const val SENDER_EMAIL = "inlockerkalsys@gmail.com"
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        requestLocationPermission()
 
         sharedPreferences = getSharedPreferences("com.kalsys.inlocker", Context.MODE_PRIVATE)
 
@@ -131,6 +134,37 @@ class EmailSettingsActivity : AppCompatActivity() {
                     Toast.makeText(this@EmailSettingsActivity, "Failed to send test email", Toast.LENGTH_SHORT).show()
                 }
             }
+        }
+    }
+
+    private fun requestLocationPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                REQUEST_LOCATION_PERMISSION
+            )
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            REQUEST_LOCATION_PERMISSION -> {
+                if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                    Toast.makeText(this, "Location permission granted", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Location permission is required for this feature", Toast.LENGTH_SHORT).show()
+                }
+                return
+            }
+            //TODO: Handle Camera Permission
         }
     }
 

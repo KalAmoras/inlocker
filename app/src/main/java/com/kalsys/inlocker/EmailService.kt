@@ -5,19 +5,33 @@ import android.util.Base64
 import android.util.Log
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
+import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
+import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.gmail.Gmail
 import com.google.api.services.gmail.GmailScopes
 import com.google.api.services.gmail.model.Message
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.util.Collections
 import java.util.Properties
+import javax.activation.DataHandler
+import javax.activation.DataSource
+import javax.activation.FileDataSource
+import javax.mail.MessagingException
 import javax.mail.Session
 import javax.mail.internet.InternetAddress
+import javax.mail.internet.MimeBodyPart
 import javax.mail.internet.MimeMessage
+import javax.mail.internet.MimeMultipart
 
 class EmailService(context: Context, credential: GoogleAccountCredential) {
 
@@ -30,9 +44,12 @@ class EmailService(context: Context, credential: GoogleAccountCredential) {
     private val service: Gmail = Gmail.Builder(transport, jsonFactory, credential)
         .setApplicationName("InLocker")
         .build()
+
     init {
         Log.d(TAG, "EmailService initialized with account: ${credential.selectedAccountName}")
     }
+
+
     fun sendEmail(senderEmail: String, recipientEmail: String, subject: String, bodyText: String) {
         try {
             val email = createEmail(senderEmail, recipientEmail, subject, bodyText)
@@ -75,6 +92,63 @@ class EmailService(context: Context, credential: GoogleAccountCredential) {
             Log.e(TAG, "Error sending message: ${e.message}", e)
             throw e
         }
+    }
+
+    suspend fun sendLocationEmail(senderEmail: String, recipientEmail: String, location: String) {
+        try {
+            val subject = "Incorrect Password Attempt"
+            val bodyText = "An incorrect password attempt was detected at the following location: $location"
+            sendEmail(senderEmail, recipientEmail, subject, bodyText)
+        } catch (e: UserRecoverableAuthIOException) {
+            withContext(Dispatchers.Main) {
+                throw e
+            }
+        } catch (e: GoogleJsonResponseException) {
+            Log.e("EmailService", "GoogleJsonResponseException: ${e.details.message}", e)
+        } catch (e: Exception) {
+            Log.e("EmailService", "Error sending location email: ${e.message}", e)
+        }
+    }
+
+    fun sendLocationAndPhotoEmail(sender: String, recipient: String, location: String, photoFile: File) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val mimeMessage = createEmailWithAttachment(sender, recipient, "Intrusion Alert", location, photoFile)
+                sendMessage(mimeMessage)
+            } catch (e: Exception) {
+                Log.e("EmailService", "Error sending email: ${e.message}")
+            }
+        }
+    }
+
+    private fun createEmailWithAttachment(
+        sender: String,
+        recipient: String,
+        subject: String,
+        bodyText: String,
+        file: File
+    ): MimeMessage {
+        val props = Properties()
+        val session = Session.getDefaultInstance(props, null)
+        val email = MimeMessage(session)
+
+        email.setFrom(InternetAddress(sender))
+        email.addRecipient(javax.mail.Message.RecipientType.TO, InternetAddress(recipient))
+        email.subject = subject
+
+        val mimeBodyPart = MimeBodyPart()
+        mimeBodyPart.setContent(bodyText, "text/plain")
+
+        val attachmentBodyPart = MimeBodyPart()
+        attachmentBodyPart.attachFile(file)
+
+        val multipart = MimeMultipart()
+        multipart.addBodyPart(mimeBodyPart)
+        multipart.addBodyPart(attachmentBodyPart)
+
+        email.setContent(multipart)
+
+        return email
     }
 }
 

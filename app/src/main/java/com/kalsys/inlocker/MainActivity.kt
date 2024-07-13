@@ -6,6 +6,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -43,12 +44,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.kalsys.inlocker.ui.components.CustomButton
 import com.kalsys.inlocker.ui.theme.InLockerTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import android.Manifest
+import androidx.activity.result.contract.ActivityResultContracts
+
 
 class MainActivity : ComponentActivity() {
 
@@ -57,7 +63,7 @@ class MainActivity : ComponentActivity() {
         private const val FIRST_LAUNCH_KEY = "first_launch"
         private const val MONITOR_SWITCH = "monitor_switch"
         private const val CREATE_PASSWORD_REQUEST_CODE = 1001
-
+        private const val CAMERA_PERMISSION_CODE = 100
     }
 
     private val systemAlertWindowRequestCode = 101
@@ -76,11 +82,14 @@ class MainActivity : ComponentActivity() {
         passwordDao = PasswordDatabase.getInstance(applicationContext).passwordDao()
 
 
-        if (isFirstLaunch()) {
-            startActivity(Intent(this, InstructionActivity::class.java))
-            markFirstLaunch()
-            return
-        }
+//        if (isFirstLaunch()) {
+//            startActivity(Intent(this, InstructionActivity::class.java))
+//            markFirstLaunch()
+//            return
+//        }
+//        if (!hasCameraPermission()) {
+//            requestCameraPermission()
+//        }
         enableEdgeToEdge()
         setContent {
             InLockerTheme {
@@ -92,6 +101,8 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+        handlePermissionsAndInstructions()
+        enableEdgeToEdge()
         checkAccessibilityServiceStatus()
         hasBackgroundStartPermissionInMIUI(this)
     }
@@ -277,6 +288,43 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun handlePermissionsAndInstructions() {
+        if (isFirstLaunch()) {
+            startActivity(Intent(this, InstructionActivity::class.java))
+            markFirstLaunch()
+        } else {
+            handlePermissions()
+        }
+    }
+
+    private fun handlePermissions() {
+        val permissions = arrayOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+
+        if (!hasPermissions(*permissions)) {
+            requestPermissionsLauncher.launch(permissions)
+        }
+    }
+
+    private fun hasPermissions(vararg permissions: String): Boolean {
+        return permissions.all { permission ->
+            ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private val requestPermissionsLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        permissions.entries.forEach { entry ->
+            if (!entry.value) {
+                // Handle permission not granted
+                Log.e("MainActivity", "Permission ${entry.key} not granted.")
+            }
+        }
+    }
 
     private fun isFirstLaunch(): Boolean {
         return !sharedPreferences.contains(FIRST_LAUNCH_KEY)

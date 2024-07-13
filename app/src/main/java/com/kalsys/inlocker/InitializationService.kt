@@ -44,7 +44,6 @@ class InitializationService : Service() {
         super.onDestroy()
         Log.d("InitializationService", "Service destroyed")
         serviceScope.cancel()
-//        restartService()
     }
 
     private fun createNotificationChannel() {

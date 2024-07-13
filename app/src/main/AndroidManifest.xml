@@ -3,18 +3,24 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.kalsys.inlocker">
 
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
     <queries>
         <package android:name="com.miui.securitycenter" />
@@ -77,7 +83,6 @@
             android:showOnLockScreen="true">
         </activity>
 
-
         <activity android:name=".CreatePasswordActivity" />
 
         <activity android:name=".InstructionActivity" />
@@ -85,12 +90,6 @@
         <activity android:name=".AuthActivity" />
 
         <activity android:name=".EmailSettingsActivity" />
-
-        <!--        <activity android:name=".EmailService" />-->
-<!--        <activity android:name=".PasswordItem" />-->
-<!--        <activity android:name=".PasswordDao" />-->
-<!--        <activity android:name=".PasswordDatabase" />-->
-
 
         <activity
             android:name=".AppListActivity"
@@ -126,9 +125,5 @@
                 <action android:name="android.app.action.DEVICE_ADMIN_DISABLED" />
             </intent-filter>
         </receiver>
-
-
-
-
     </application>
 </manifest>

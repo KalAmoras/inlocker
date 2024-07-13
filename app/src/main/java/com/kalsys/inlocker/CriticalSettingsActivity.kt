@@ -42,7 +42,7 @@ import com.kalsys.inlocker.ui.theme.InLockerTheme
 class CriticalSettingsActivity : AppCompatActivity() {
 
     private lateinit var passwordDao: PasswordDao
-    private lateinit var emailDao: EmailDao
+//    private lateinit var emailDao: EmailDao
     private lateinit var passwordChecker: PasswordChecker
     private lateinit var devicePolicyManager: DevicePolicyManager
     private lateinit var compName: ComponentName
@@ -58,7 +58,6 @@ class CriticalSettingsActivity : AppCompatActivity() {
 
         val database = PasswordDatabase.getInstance(applicationContext)
         passwordDao = database.passwordDao()
-        emailDao = database.emailDao()
 
         devicePolicyManager = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         compName = ComponentName(this, MyDeviceAdminReceiver::class.java)

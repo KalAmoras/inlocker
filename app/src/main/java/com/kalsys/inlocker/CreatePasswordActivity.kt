@@ -185,7 +185,8 @@ class CreatePasswordActivity : AppCompatActivity() {
                         "com.miui.system",
                         "com.android.systemui",
                         "com.google.android.inputmethod.latin",
-                        "com.android.incallui")
+                        "com.android.incallui",
+                        "com.google.android.permissioncontroller")
                     val filteredApps = installedApps.filter { it.packageName !in excludedPackages }
                     Log.d("CreatePasswordActivity", "Filtered apps (excluding $excludedPackages): ${filteredApps.map { it.packageName }}")
 
