@@ -9,11 +9,9 @@ import androidx.appcompat.app.AppCompatActivity
 
 class PasswordCheckerImplementation(
     private val passwordDao: PasswordDao,
-    private val devicePolicyManager: DevicePolicyManager,
-    private val compName: ComponentName
 ) : PasswordChecker {
 
-    private val passwordTypes = listOf("uninstall_protection", "delete_all_passwords", "email_service")
+    private val passwordTypes = listOf("critical_settings", "service_switch")
 
     override suspend fun checkAndRequestPassword(
         context: Context,
@@ -37,45 +35,27 @@ class PasswordCheckerImplementation(
             Log.d("PasswordCheckerImplementation", "chosenApp: $chosenApp")
 
             when (chosenApp) {
-                "uninstall_protection" -> {
-                    Log.d("PasswordCheckerImplementation", "uninstall protection is being authenticated")
-
-                    if (devicePolicyManager.isAdminActive(compName)) {
-                        Log.d("PasswordCheckerImplementation", "Calling intent for uninstall protection disabling")
-
-                        val intent = Intent(context, LockScreenActivity::class.java).apply {
-                            putExtra("chosenApp", chosenApp)
-                            Log.d("PasswordCheckerImplementation", "chosenApp inside uninstall_protection: $chosenApp")
-
-                        }
-                        Log.d("PasswordCheckerImplementation", "Sending result code of uninstall protection to AppOptionsActivity")
-
-                        (context as AppCompatActivity).startActivityForResult(intent, CriticalSettingsActivity.REQUEST_CODE_LOCK_SCREEN)
-                    } else {
-                        onSuccess()
-                    }
-                }
-                "delete_all_passwords" -> {
-                    Log.d("PasswordCheckerImplementation", "Calling intent for deleting all passwords")
+                "service_switch" -> {
+                    Log.d("PasswordCheckerImplementation", "Calling intent for service switch")
 
                     val intent = Intent(context, LockScreenActivity::class.java).apply {
                         putExtra("chosenApp", chosenApp)
-                        Log.d("PasswordCheckerImplementation", "chosenApp inside delete all passwords: $chosenApp")
+                        Log.d("PasswordCheckerImplementation", "chosenApp inside service_switch: $chosenApp")
                     }
-                    Log.d("PasswordCheckerImplementation", "Sending result code of delete all passwords to AppOptionsActivity")
+                    Log.d("PasswordCheckerImplementation", "Sending result code of service switch to MainActivity")
 
-                    (context as AppCompatActivity).startActivityForResult(intent, CriticalSettingsActivity.REQUEST_CODE_LOCK_SCREEN)
+                    (context as AppCompatActivity).startActivityForResult(intent, MainActivity.DISABLE_SERVICE_REQUEST_CODE)
                 }
-                "email_service" -> {
-                    Log.d("PasswordCheckerImplementation", "Calling intent for email service")
+                "critical_settings" -> {
+                    Log.d("PasswordCheckerImplementation", "Calling intent for critical settings")
 
                     val intent = Intent(context, LockScreenActivity::class.java).apply {
                         putExtra("chosenApp", chosenApp)
-                        Log.d("PasswordCheckerImplementation", "chosenApp inside email_service: $chosenApp")
+                        Log.d("PasswordCheckerImplementation", "chosenApp inside critical_settings: $chosenApp")
                     }
-                    Log.d("PasswordCheckerImplementation", "Sending result code of email service to CriticalSettingsActivity")
+                    Log.d("PasswordCheckerImplementation", "Sending result code of critical settings to AppOptionsActivity")
 
-                    (context as AppCompatActivity).startActivityForResult(intent, CriticalSettingsActivity.REQUEST_CODE_LOCK_SCREEN)
+                    (context as AppCompatActivity).startActivityForResult(intent, AppOptionsActivity.REQUEST_CODE_LOCK_SCREEN)
                 }
                 else -> onFailure()
             }

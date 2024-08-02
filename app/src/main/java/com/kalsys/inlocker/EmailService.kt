@@ -3,30 +3,20 @@ package com.kalsys.inlocker
 import android.content.Context
 import android.util.Base64
 import android.util.Log
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.gmail.Gmail
-import com.google.api.services.gmail.GmailScopes
 import com.google.api.services.gmail.model.Message
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.IOException
-import java.io.InputStream
-import java.util.Collections
 import java.util.Properties
-import javax.activation.DataHandler
-import javax.activation.DataSource
-import javax.activation.FileDataSource
-import javax.mail.MessagingException
 import javax.mail.Session
 import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeBodyPart
@@ -44,6 +34,8 @@ class EmailService(context: Context, credential: GoogleAccountCredential) {
     private val service: Gmail = Gmail.Builder(transport, jsonFactory, credential)
         .setApplicationName("InLocker")
         .build()
+    private val passwordDao: PasswordDao = PasswordDatabase.getInstance(context).passwordDao()
+
 
     init {
         Log.d(TAG, "EmailService initialized with account: ${credential.selectedAccountName}")
@@ -149,6 +141,25 @@ class EmailService(context: Context, credential: GoogleAccountCredential) {
         email.setContent(multipart)
 
         return email
+    }
+
+    suspend fun sendPasswordsEmail(senderEmail: String, recipientEmail: String) {
+        try {
+            val emailContent = buildPasswordEmailContent()
+            val subject = "Your Saved Passwords"
+            sendEmail(senderEmail, recipientEmail, subject, emailContent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error sending passwords email: ${e.message}", e)
+            throw e
+        }
+    }
+    suspend fun buildPasswordEmailContent(): String {
+        val passwords = passwordDao.getAllPasswords()
+        val emailContent = StringBuilder("Here are your saved passwords:\n\n")
+        passwords.forEach { passwordItem ->
+            emailContent.append("App: ${passwordItem.chosenApp}\nPassword: ${passwordItem.password}\n\n")
+        }
+        return emailContent.toString()
     }
 }
 

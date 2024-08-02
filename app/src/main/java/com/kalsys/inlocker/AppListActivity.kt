@@ -9,9 +9,13 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,7 +34,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.text.style.TextAlign
 import com.kalsys.inlocker.ui.components.CustomButton
 import com.kalsys.inlocker.ui.theme.InLockerTheme
 import kotlinx.coroutines.CoroutineScope
@@ -164,13 +171,48 @@ class AppListActivity : AppCompatActivity() {
         onSetDefaultPassword: () -> Unit
     ) {
         var query by remember { mutableStateOf("") }
+        val context = this@AppListActivity
 
-        Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.padding(bottom = 10.dp)
+        ){
             Text(
-                text = "App List",
-                fontSize = 24.sp,
-                modifier = Modifier.padding(16.dp)
+                "App List",
+                fontSize = 34.sp,
+                lineHeight = 20.sp,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
             )
+        }
+        Row( horizontalArrangement = Arrangement.End,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Button(
+                onClick = {
+                    val intent = Intent(context, AppInstructionActivity::class.java)
+                    startActivity(intent)
+                },
+                modifier = Modifier.padding(end = 12.dp)
+                    .padding(top = 20.dp)
+                    .width(40.dp)
+                    .height(40.dp),
+                shape = CircleShape,
+                contentPadding = PaddingValues(0.dp) // Remove default padding
+            ) {
+                Text(
+                    text = "?",
+                    fontSize = 22.sp,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 60.dp)
+        ) {
             OutlinedTextField(
                 value = query,
                 onValueChange = {
@@ -186,7 +228,7 @@ class AppListActivity : AppCompatActivity() {
                 onClick = onSetDefaultPassword,
                 modifier = Modifier
                     .padding(16.dp)
-                    .width(200.dp),
+                    .width(190.dp),
                 text = "Set Default Password for All Apps"
             )
             LazyColumn {

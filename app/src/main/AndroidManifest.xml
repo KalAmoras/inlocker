@@ -22,6 +22,8 @@
     <uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
+    <uses-permission android:name="android.permission.USB_PERMISSION"/>
+
     <queries>
         <package android:name="com.miui.securitycenter" />
         <package android:name="com.miui.permcenter.permissions.AppPermissionsEditorActivity" />
@@ -85,8 +87,6 @@
 
         <activity android:name=".CreatePasswordActivity" />
 
-        <activity android:name=".InstructionActivity" />
-
         <activity android:name=".AuthActivity" />
 
         <activity android:name=".EmailSettingsActivity" />
@@ -103,6 +103,17 @@
             android:label="App Options Activity"
             />
 
+        <activity android:name=".InstructionActivity" />
+
+        <activity android:name=".AppInstructionActivity" />
+
+        <activity android:name=".CriticalInstructionActivity" />
+
+        <activity android:name=".EmailInstructionActivity" />
+
+        <activity android:name=".OptionsInstructionActivity" />
+
+
         <receiver
             android:name=".BootReceiver"
             android:enabled="true"
@@ -112,6 +123,16 @@
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </receiver>
+
+        <receiver android:name=".UsbReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"/>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_DETACHED"/>
+            </intent-filter>
+        </receiver>
+
 
         <receiver
             android:name=".MyDeviceAdminReceiver"

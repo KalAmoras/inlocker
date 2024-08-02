@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.Alignment
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +43,6 @@ import com.kalsys.inlocker.ui.theme.InLockerTheme
 class CriticalSettingsActivity : AppCompatActivity() {
 
     private lateinit var passwordDao: PasswordDao
-//    private lateinit var emailDao: EmailDao
     private lateinit var passwordChecker: PasswordChecker
     private lateinit var devicePolicyManager: DevicePolicyManager
     private lateinit var compName: ComponentName
@@ -51,7 +51,6 @@ class CriticalSettingsActivity : AppCompatActivity() {
 
     companion object {
         const val RESULT_ENABLE = 1
-        const val REQUEST_CODE_LOCK_SCREEN = 2
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,7 +60,7 @@ class CriticalSettingsActivity : AppCompatActivity() {
 
         devicePolicyManager = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         compName = ComponentName(this, MyDeviceAdminReceiver::class.java)
-        passwordChecker = PasswordCheckerImplementation(passwordDao, devicePolicyManager, compName)
+        passwordChecker = PasswordCheckerImplementation(passwordDao)
         _isAdminActive.value = devicePolicyManager.isAdminActive(compName)
 
 
@@ -88,14 +87,7 @@ class CriticalSettingsActivity : AppCompatActivity() {
             .setMessage("Are you sure you want to delete all passwords?")
             .setPositiveButton(android.R.string.yes) { _, _ ->
                 lifecycleScope.launch {
-                    passwordChecker.checkAndRequestPassword(
-                        this@CriticalSettingsActivity,
-                        "delete_all_passwords",
-                        { deletePasswords() },
-                        {
-                            Toast.makeText(this@CriticalSettingsActivity, "Password verification failed", Toast.LENGTH_SHORT).show()
-                        },
-                    )
+                    deletePasswords()
                 }
             }
             .setNegativeButton(android.R.string.no) { dialog, _ -> dialog.cancel() }
@@ -123,19 +115,9 @@ class CriticalSettingsActivity : AppCompatActivity() {
             Log.d("CriticalSettingsActivity", "Device admin is active, requesting password")
             lifecycleScope.launch {
                 try {
-                    passwordChecker.checkAndRequestPassword(
-                        this@CriticalSettingsActivity,
-                        "uninstall_protection",
-                        {
-                            Log.d("CriticalSettingsActivity", "Password verified, disabling device admin")
-                            disableDeviceAdmin()
-                            Log.d("CriticalSettingsActivity", "Device admin disabled")
-                        },
-                        {
-                            Log.d("CriticalSettingsActivity", "Password verification failed")
-                            Toast.makeText(this@CriticalSettingsActivity, "Password verification failed", Toast.LENGTH_SHORT).show()
-                        }
-                    )
+                    Log.d("CriticalSettingsActivity", "Password verified, disabling device admin")
+                    disableDeviceAdmin()
+                    Log.d("CriticalSettingsActivity", "Device admin disabled")
                 } catch (e: Exception) {
                     Log.e("CriticalSettingsActivity", "Error checking password: ${e.message}", e)
                     Toast.makeText(this@CriticalSettingsActivity, "Error checking password", Toast.LENGTH_SHORT).show()
@@ -154,6 +136,7 @@ class CriticalSettingsActivity : AppCompatActivity() {
             putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "You need to enable this to prevent uninstallation.")
         }
         startActivityForResult(intent, RESULT_ENABLE)
+        Toast.makeText(this, "Uninstall protection enabled", Toast.LENGTH_SHORT).show()
     }
 
     private fun disableDeviceAdmin() {
@@ -177,64 +160,24 @@ class CriticalSettingsActivity : AppCompatActivity() {
     }
 
     private fun handleEmailService() {
-        lifecycleScope.launch {
-            passwordChecker.checkAndRequestPassword(
-                this@CriticalSettingsActivity,
-                "email_service",
-                {
-                    startActivity(Intent(this@CriticalSettingsActivity, EmailSettingsActivity::class.java))
-                },
-                {
-                    Toast.makeText(this@CriticalSettingsActivity, "Password verification failed", Toast.LENGTH_SHORT).show()
-                }
-            )
-        }
+        startActivity(Intent(this@CriticalSettingsActivity, EmailSettingsActivity::class.java))
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        Log.d("CriticalSettingsActivity", "onActivityResult called with requestCode: $requestCode, resultCode: $resultCode")
-        when (requestCode) {
-            RESULT_ENABLE -> {
-                if (resultCode == RESULT_OK) {
-                    Log.d("CriticalSettingsActivity", "RESULT_ENABLE returned RESULT_OK")
-                    Toast.makeText(this, "Uninstall protection enabled", Toast.LENGTH_SHORT).show()
-                    _isAdminActive.value = true
-                } else {
-                    Toast.makeText(this, "Failed to enable uninstall protection", Toast.LENGTH_SHORT).show()
-                }
-            }
-            REQUEST_CODE_LOCK_SCREEN -> {
-                if (resultCode == RESULT_OK) {
-                    Log.d("CriticalSettingsActivity", "REQUEST_CODE_LOCK_SCREEN returned RESULT_OK")
-
-                    val passwordType = data?.getStringExtra("chosenApp")
-                    if (passwordType != null) {
-                        Log.d("CriticalSettingsActivity", "Password type: $passwordType")
-                        when (passwordType) {
-                            "uninstall_protection" -> {
-                                Log.d("CriticalSettingsActivity", "Calling disableDeviceAdmin()")
-                                disableDeviceAdmin()
-                            }
-                            "delete_all_passwords" -> {
-                                Log.d("CriticalSettingsActivity", "Calling deletePasswords()")
-                                deletePasswords()
-                            }
-                            "email_service" -> {
-                                Log.d("CriticalSettingsActivity", "Calling emailActivity()")
-                                startActivity(Intent(this@CriticalSettingsActivity, EmailSettingsActivity::class.java))
-                            }
-                        }
-                    } else {
-                        Log.d("CriticalSettingsActivity", "Password type is null")
-                    }
-                } else {
-                    Log.d("CriticalSettingsActivity", "REQUEST_CODE_LOCK_SCREEN returned result code: $resultCode")
-                    Toast.makeText(this, "Password verification failed", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
+//    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+//        super.onActivityResult(requestCode, resultCode, data)
+//        Log.d("CriticalSettingsActivity", "onActivityResult called with requestCode: $requestCode, resultCode: $resultCode")
+//        when (requestCode) {
+//            RESULT_ENABLE -> {
+//                if (resultCode == RESULT_OK) {
+//                    Log.d("CriticalSettingsActivity", "RESULT_ENABLE returned RESULT_OK")
+//                    Toast.makeText(this, "Uninstall protection enabled", Toast.LENGTH_SHORT).show()
+//                    _isAdminActive.value = true
+//                } else {
+//                    Toast.makeText(this, "Failed to enable uninstall protection", Toast.LENGTH_SHORT).show()
+//                }
+//            }
+//        }
+//    }
 
 
     @Composable
@@ -257,17 +200,44 @@ class CriticalSettingsActivity : AppCompatActivity() {
         onEmailService: () -> Unit
     ) {
         var showToastMessage by remember { mutableStateOf<String?>(null) }
+        val context = this@CriticalSettingsActivity
 
+        Row(
+            modifier = Modifier.padding(bottom = 10.dp)
+        ){
+            Text(
+                "Critical Settings",
+                fontSize = 34.sp,
+                lineHeight = 20.sp,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+            )
+        }
+        Row( horizontalArrangement = Arrangement.End,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Button(
+                onClick = {
+                    val intent = Intent(context, CriticalInstructionActivity::class.java)
+                    startActivity(intent)
+                },
+                modifier = Modifier.padding(end = 12.dp)
+                    .padding(top = 20.dp)
+                    .width(40.dp)
+                    .height(40.dp),
+                shape = CircleShape,
+                contentPadding = PaddingValues(0.dp) // Remove default padding
+            ) {
+                Text(
+                    text = "?",
+                    fontSize = 22.sp,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
 
-        Text(
-            "Critical Settings",
-            fontSize = 34.sp,
-            lineHeight = 20.sp,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-        )
 
         BoxWithLayout {
             Column(

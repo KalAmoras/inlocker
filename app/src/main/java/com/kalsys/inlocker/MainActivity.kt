@@ -63,6 +63,7 @@ class MainActivity : ComponentActivity() {
         private const val FIRST_LAUNCH_KEY = "first_launch"
         private const val MONITOR_SWITCH = "monitor_switch"
         private const val CREATE_PASSWORD_REQUEST_CODE = 1001
+        const val DISABLE_SERVICE_REQUEST_CODE = 1002
         private const val CAMERA_PERMISSION_CODE = 100
     }
 
@@ -70,6 +71,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var monitorDao: MonitorDao
     private lateinit var passwordDao: PasswordDao
+    private lateinit var passwordChecker: PasswordCheckerImplementation
+
     private val switchState = mutableStateOf(false)
 
 
@@ -80,16 +83,9 @@ class MainActivity : ComponentActivity() {
         sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         monitorDao = PasswordDatabase.getInstance(applicationContext).monitorDao()
         passwordDao = PasswordDatabase.getInstance(applicationContext).passwordDao()
+        passwordChecker = PasswordCheckerImplementation(passwordDao)
 
 
-//        if (isFirstLaunch()) {
-//            startActivity(Intent(this, InstructionActivity::class.java))
-//            markFirstLaunch()
-//            return
-//        }
-//        if (!hasCameraPermission()) {
-//            requestCameraPermission()
-//        }
         enableEdgeToEdge()
         setContent {
             InLockerTheme {
@@ -106,99 +102,122 @@ class MainActivity : ComponentActivity() {
         checkAccessibilityServiceStatus()
         hasBackgroundStartPermissionInMIUI(this)
     }
+
     private fun enableService() {
         Log.d("MainActivity", "Running startForeground")
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                Log.d("MainActivity", "Before check for password on startForeground")
-
-                val functionalities = listOf("uninstall_protection", "delete_all_passwords", "email_service")
-                val nullPasswords = functionalities.any { functionality ->
+                val functionalities = listOf("service_switch", "critical_settings")
+                val missingPasswords = functionalities.filter { functionality ->
                     val passwordItem = passwordDao.getPasswordItem(functionality)
-                    Log.d("MainActivity", "Password item for $functionality: $passwordItem")
                     passwordItem?.password == null
                 }
 
-                Log.d("MainActivity", "Null passwords found: $nullPasswords")
-
-                if (nullPasswords) {
+                if (missingPasswords.isNotEmpty()) {
                     withContext(Dispatchers.Main) {
-                        Log.d("MainActivity", "Null passwords found, starting CreatePasswordActivity")
-
-                        val intent = Intent(this@MainActivity, CreatePasswordActivity::class.java).apply {
-                            putExtra("setDefaultPassword", true)
+                        for (functionality in missingPasswords) {
+                            val intent = Intent(this@MainActivity, CreatePasswordActivity::class.java).apply {
+                                putExtra("chosenApp", functionality)
+                            }
+                            startActivityForResult(intent, CREATE_PASSWORD_REQUEST_CODE)
                         }
-                        startActivityForResult(intent, CREATE_PASSWORD_REQUEST_CODE)
                     }
                 } else {
+                    monitorDao.insertMonitor(Monitor(id = 1, shouldMonitor = true))
+                    sharedPreferences.edit().putBoolean(MONITOR_SWITCH, true).apply()
                     startMonitoringService()
                 }
             } catch (e: Exception) {
-                Log.e("MainActivity", "Error in startForegroundService", e)
+                Log.e("MainActivity", "Error in enableService", e)
             }
         }
     }
 
+
     private fun disableService() {
         lifecycleScope.launch(Dispatchers.IO) {
-            monitorDao.insertMonitor(Monitor(id = 1, shouldMonitor = false))
-            sharedPreferences.edit().putBoolean(MONITOR_SWITCH, false).apply()
-
+            val intent = Intent(this@MainActivity, LockScreenActivity::class.java).apply {
+                putExtra("chosenApp", "service_switch")
+            }
+            startActivityForResult(intent, DISABLE_SERVICE_REQUEST_CODE)
         }
-        val intent = Intent(this, AppMonitorService::class.java)
-        stopService(intent)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == CREATE_PASSWORD_REQUEST_CODE) {
-            if (resultCode == RESULT_OK) {
-                lifecycleScope.launch(Dispatchers.IO) {
-                    val functionalities = listOf("uninstall_protection", "delete_all_passwords", "email_service")
-                    val nullPasswords = functionalities.any { functionality ->
-                        val passwordItem = passwordDao.getPasswordItem(functionality)
-                        Log.d("MainActivity", "Password item for $functionality: $passwordItem")
-                        passwordItem?.password == null
-                    }
 
-                    if (!nullPasswords) {
-                        withContext(Dispatchers.Main) {
-                            startMonitoringService()
-                        }
-                    } else {
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                this@MainActivity,
-                                "System wasn't enabled because it needs the passwords for critical functionalities.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            switchState.value = false
-
+        when (requestCode) {
+            DISABLE_SERVICE_REQUEST_CODE -> {
+                if (resultCode == RESULT_OK) {
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        try {
+                            monitorDao.insertMonitor(Monitor(id = 1, shouldMonitor = false))
+                            sharedPreferences.edit().putBoolean(MONITOR_SWITCH, false).apply()
+                            withContext(Dispatchers.Main) {
+                                val intent = Intent(this@MainActivity, AppMonitorService::class.java)
+                                stopService(intent)
+                                showToast("Service stopped successfully")
+                                switchState.value = false
+                            }
+                        } catch (e: Exception) {
+                            Log.e("MainActivity", "Error disabling service", e)
                         }
                     }
+                } else {
+                    showToast("Failed to disable service due to incorrect password.")
+                    switchState.value = true
                 }
-            } else {
-                Toast.makeText(
-                    this,
-                    "System wasn't enabled because it needs the passwords for critical functionalities.",
-                    Toast.LENGTH_SHORT
-                ).show()
-                switchState.value = false
+            }
+            CREATE_PASSWORD_REQUEST_CODE -> {
+                if (resultCode == RESULT_OK) {
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        try {
+                            val functionalities = listOf("service_switch", "critical_settings")
+                            val nullPasswords = functionalities.any { functionality ->
+                                val passwordItem = passwordDao.getPasswordItem(functionality)
+                                passwordItem?.password == null
+                            }
+                            if (!nullPasswords) {
+                                withContext(Dispatchers.Main) {
+                                    AuthStateManager.resetAuthState(applicationContext)
+                                    monitorDao.insertMonitor(Monitor(id = 1, shouldMonitor = true))
+                                    sharedPreferences.edit().putBoolean(MONITOR_SWITCH, true).apply()
+                                    startMonitoringService()
+                                    switchState.value = true
 
+                                }
+                            } else {
+                                withContext(Dispatchers.Main) {
+                                    showToast("System wasn't enabled because it needs passwords for critical functionalities.")
+                                    switchState.value = false
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e("MainActivity", "Error handling CREATE_PASSWORD_REQUEST_CODE", e)
+                            switchState.value = false
+                        }
+                    }
+                } else {
+                    showToast("System wasn't enabled because it needs passwords for critical functionalities.")
+                    switchState.value = false
+                }
             }
         }
-
     }
 
+
+    private fun showToast(message: String) {
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        }
+
+
     private fun startMonitoringService() {
-        Log.d("MainActivity", "No null passwords found, starting AppMonitorService")
 
         AuthStateManager.resetAuthState(applicationContext)
         lifecycleScope.launch(Dispatchers.IO) {
             monitorDao.insertMonitor(Monitor(id = 1, shouldMonitor = true))
             sharedPreferences.edit().putBoolean(MONITOR_SWITCH, true).apply()
-
         }
         val intent = Intent(this, AppMonitorService::class.java)
         startService(intent)
@@ -241,18 +260,14 @@ class MainActivity : ComponentActivity() {
     private fun checkAccessibilityServiceStatus() {
         try {
             val isEnabled = isAccessibilityServiceEnabled(AppMonitorService::class.java)
-//            Log.d("MainActivity", "Accessibility service status: $isEnabled")
             if (!isEnabled) {
                 openAccessibilitySettings()
             }
-//            Toast.makeText(this, "Accessibility is $isEnabled", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-//            Log.e("MainActivity", "Error checking Accessibility service status", e)
         }
     }
 
     private fun isAccessibilityServiceEnabled(service: Class<out AccessibilityService>): Boolean {
-        Log.d("MainActivity", "Checking if accessibility service is enabled")
 
         val enabledServices = Settings.Secure.getString(
             contentResolver,
@@ -268,8 +283,6 @@ class MainActivity : ComponentActivity() {
 
         while (colonSplitter.hasNext()) {
             val componentName = colonSplitter.next()
-//            Log.d("MainActivity", "Checking service: $componentName")
-
             if (componentName.equals(ComponentName(this, service).flattenToString(), ignoreCase = true)) {
                 return true
             }
@@ -320,7 +333,6 @@ class MainActivity : ComponentActivity() {
     ) { permissions ->
         permissions.entries.forEach { entry ->
             if (!entry.value) {
-                // Handle permission not granted
                 Log.e("MainActivity", "Permission ${entry.key} not granted.")
             }
         }
@@ -340,7 +352,9 @@ class MainActivity : ComponentActivity() {
         )
     {
         val context = this@MainActivity
-        val switchState = remember { mutableStateOf(false) }
+        val switchState = remember { mutableStateOf(sharedPreferences.getBoolean(MONITOR_SWITCH, false)) }
+
+
 
         LaunchedEffect(Unit) {
             switchState.value = getMonitorState()
@@ -430,6 +444,7 @@ class MainActivity : ComponentActivity() {
                         },
 
                     )
+
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Column(

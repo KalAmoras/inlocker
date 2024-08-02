@@ -56,23 +56,30 @@ class AppMonitorService : AccessibilityService() {
         monitorDao = passwordDatabase.monitorDao()
 
         serviceScope.launch {
-            val monitor = Monitor(id = 1, shouldMonitor = true)
-            monitorDao.insertMonitor(monitor)
+            val monitor = monitorDao.getMonitor()
+            if (monitor?.shouldMonitor == true) {
+                startForeground(NOTIFICATION_ID, createNotification())
+            } else {
+                stopForegroundService()
+            }
         }
 
         createNotificationChannel()
-        startForeground(NOTIFICATION_ID, createNotification())
+
+//        serviceScope.launch {
+//            val monitor = Monitor(id = 1, shouldMonitor = true)
+//            monitorDao.insertMonitor(monitor)
+//        }
+//        createNotificationChannel()
+//        startForeground(NOTIFICATION_ID, createNotification())
 
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         Log.d("AppMonitorService", "onAccessibilityEvent triggered: ${event.eventType}")
-
-
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             val packageName = event.packageName?.toString()
             Log.d("AppMonitorService", "Window state changed, package: $packageName")
-
             if (!packageName.isNullOrEmpty() && !AuthStateManager.isAppAuthenticated(applicationContext, packageName)) {
                 val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
                 if (!keyguardManager.isKeyguardLocked) {
@@ -86,28 +93,15 @@ class AppMonitorService : AccessibilityService() {
                             if (monitorItem.shouldMonitor === true) {
                                 val passwordItem = passwordDao.getPasswordItem(packageName)
                                 if (passwordItem != null) {
-                                    Log.d(
-                                        "AppMonitorService",
-                                        "Password item found for package: $packageName"
-                                    )
-                                    val lockScreenIntent = Intent(
-                                        applicationContext,
-                                        LockScreenActivity::class.java
-                                    ).apply {
+                                    Log.d("AppMonitorService","Password item found for package: $packageName")
+                                    val lockScreenIntent = Intent(applicationContext, LockScreenActivity::class.java).apply {
                                         putExtra("chosenApp", packageName)
                                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                     }
                                     try {
                                         startActivity(lockScreenIntent)
-                                        Log.d(
-                                            "AppMonitorService",
-                                            "LockScreenActivity started for package: $packageName"
-                                        )
                                     } catch (e: Exception) {
-                                        Log.e(
-                                            "AppMonitorService",
-                                            "Error launching LockScreenActivity: ${e.message}"
-                                        )
+                                        Log.e("AppMonitorService","Error launching LockScreenActivity: ${e.message}")
                                     }
                                 } else {
                                     Log.d(
@@ -115,6 +109,8 @@ class AppMonitorService : AccessibilityService() {
                                         "No password item found for package: $packageName"
                                     )
                                 }
+                            } else {
+                                stopForegroundService()
                             }
                         }
                     }
@@ -136,14 +132,17 @@ class AppMonitorService : AccessibilityService() {
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-//        restartService()
         super.onTaskRemoved(rootIntent)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         serviceScope.cancel()
-//        restartService()
+    }
+
+    private fun stopForegroundService() {
+        stopForeground(true)
+        stopSelf()
     }
 
 
@@ -169,24 +168,6 @@ class AppMonitorService : AccessibilityService() {
             .setContentIntent(pendingIntent)
             .build()
     }
-
-//    private fun restartService() {
-//        val restartServiceIntent = Intent(applicationContext, AppMonitorService::class.java).also {
-//            it.setPackage(packageName)
-//        }
-//        val restartServicePendingIntent = PendingIntent.getService(
-//            this,
-//            1,
-//            restartServiceIntent,
-//            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
-//        )
-//        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-//        alarmManager.set(
-//            AlarmManager.ELAPSED_REALTIME,
-//            SystemClock.elapsedRealtime() + 1000,
-//            restartServicePendingIntent
-//        )
-//    }
 
     private fun isIgnoringBatteryOptimizations(): Boolean {
         val powerManager = getSystemService(POWER_SERVICE) as PowerManager

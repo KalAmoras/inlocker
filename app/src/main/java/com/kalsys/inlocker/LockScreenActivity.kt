@@ -40,7 +40,6 @@ class LockScreenActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d("LockScreenActivity", "LockScreenActivity created")
 
         val passwordDatabase = PasswordDatabase.getInstance(applicationContext)
         passwordDao = passwordDatabase.passwordDao()
@@ -70,7 +69,7 @@ class LockScreenActivity : AppCompatActivity() {
     }
 
     private fun handlePasswordVerification(chosenApp: String) {
-        val optionsList = listOf("uninstall_protection", "delete_all_passwords", "email_service")
+        val optionsList = listOf("critical_settings", "service_switch")
 
         if(optionsList.contains(chosenApp)){
             val resultIntent = Intent().apply {
@@ -80,31 +79,6 @@ class LockScreenActivity : AppCompatActivity() {
             finish()
         } else {
             launchApp(chosenApp)
-        }
-    }
-
-    private fun launchApp(appPackageName: String) {
-        try {
-            val intent = Intent(Intent.ACTION_MAIN).apply {
-                addCategory(Intent.CATEGORY_LAUNCHER)
-                `package` = appPackageName
-            }
-            val launchIntent = packageManager.queryIntentActivities(intent, 0).firstOrNull()?.activityInfo?.let { activityInfo ->
-                Intent(Intent.ACTION_MAIN).apply {
-                    addCategory(Intent.CATEGORY_LAUNCHER)
-                    component = ComponentName(activityInfo.packageName, activityInfo.name)
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-            }
-
-            if (launchIntent != null) {
-                startActivity(launchIntent)
-                finish()
-            } else {
-                Toast.makeText(this, "Unable to launch app", Toast.LENGTH_SHORT).show()
-            }
-        } catch (e: Exception) {
-            Toast.makeText(this, "Unable to launch app", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -133,56 +107,6 @@ class LockScreenActivity : AppCompatActivity() {
         }
     }
 
-
-
-    private fun getStoredRecipientEmail(): String? {
-        val sharedPreferences = getSharedPreferences("com.kalsys.inlocker", Context.MODE_PRIVATE)
-        return sharedPreferences.getString("recipient_email", null)
-    }
-
-
-    private fun getCurrentTimeMillis(): Long {
-        val currentTimeMillis = System.currentTimeMillis()
-        Log.d("LockScreenActivity", "Current time in millis: $currentTimeMillis")
-        return currentTimeMillis
-    }
-
-    private fun shouldSendEmail(): Boolean {
-        val sharedPreferences = getSharedPreferences("com.kalsys.inlocker", Context.MODE_PRIVATE)
-        val lastSentTime = sharedPreferences.getLong("last_email_sent_time", 0)
-        val currentTime = getCurrentTimeMillis()
-        val shouldSend = (currentTime - lastSentTime) > emailIntervalMillis
-        Log.d("LockScreenActivity", "Last sent time: $lastSentTime, Current time: $currentTime, Should send email: $shouldSend")
-        return shouldSend
-    }
-
-    private fun saveLastEmailSentTime() {
-        val currentTime = getCurrentTimeMillis()
-        val sharedPreferences = getSharedPreferences("com.kalsys.inlocker", Context.MODE_PRIVATE)
-        sharedPreferences.edit().putLong("last_email_sent_time", currentTime).apply()
-        Log.d("LockScreenActivity", "Saved last email sent time: $currentTime")
-    }
-
-//    private fun handleFailedPassword() {
-//        if (shouldSendEmail()) {
-//            locationHelper.getCurrentLocation { location ->
-//                location?.let {
-//                    val locationText = "Latitude: ${location.latitude}, Longitude: ${location.longitude}"
-//                    val senderEmail = getStoredRecipientEmail()
-//                    val recipientEmail = getStoredRecipientEmail()
-//                    Log.d("LockScreenActivity", "Obtained location: Latitude = ${location.latitude}, Longitude = ${location.longitude}")
-//                    senderEmail?.let { sender ->
-//                        emailScope.launch {
-//                            emailService.sendLocationEmail(sender, recipientEmail!!, locationText)
-//                            saveLastEmailSentTime()
-//                        }
-//                    }
-//                }
-//            }
-//        } else {
-//            Log.d("LockScreenActivity", "Email not sent due to interval restriction")
-//        }
-//    }
     private fun handleFailedPassword() {
         if (shouldSendEmail()) {
             cameraHelper.takePhoto { photoFile ->
@@ -206,6 +130,56 @@ class LockScreenActivity : AppCompatActivity() {
             }
         }
     }
+
+    private fun launchApp(appPackageName: String) {
+        try {
+            val intent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_LAUNCHER)
+                `package` = appPackageName
+            }
+            val launchIntent = packageManager.queryIntentActivities(intent, 0).firstOrNull()?.activityInfo?.let { activityInfo ->
+                Intent(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_LAUNCHER)
+                    component = ComponentName(activityInfo.packageName, activityInfo.name)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+            }
+
+            launchIntent?.let {
+                startActivity(it)
+                finish()
+            } ?: Toast.makeText(this, "Unable to launch app", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Unable to launch app", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun getStoredRecipientEmail(): String? {
+        val sharedPreferences = getSharedPreferences("com.kalsys.inlocker", Context.MODE_PRIVATE)
+        return sharedPreferences.getString("recipient_email", null)
+    }
+
+
+    private fun getCurrentTimeMillis(): Long {
+        val currentTimeMillis = System.currentTimeMillis()
+        return currentTimeMillis
+    }
+
+    private fun shouldSendEmail(): Boolean {
+        val sharedPreferences = getSharedPreferences("com.kalsys.inlocker", Context.MODE_PRIVATE)
+        val lastSentTime = sharedPreferences.getLong("last_email_sent_time", 0)
+        val currentTime = getCurrentTimeMillis()
+        val shouldSend = (currentTime - lastSentTime) > emailIntervalMillis
+        return shouldSend
+    }
+
+    private fun saveLastEmailSentTime() {
+        val currentTime = getCurrentTimeMillis()
+        val sharedPreferences = getSharedPreferences("com.kalsys.inlocker", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putLong("last_email_sent_time", currentTime).apply()
+    }
+
+
 
 
     override fun onDestroy() {

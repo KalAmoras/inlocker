@@ -1,14 +1,11 @@
 package com.kalsys.inlocker
 
 import android.content.Context
-import android.hardware.Camera.Parameters.FLASH_MODE_ON
 import android.util.Log
 import android.widget.Toast
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.ImageCapture.FLASH_MODE_ON
-import androidx.camera.core.ImageCapture.FLASH_MODE_OFF
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
@@ -19,16 +16,15 @@ import java.util.Locale
 class CameraHelper(private val context: Context, private val lifecycleOwner: LifecycleOwner) {
 
     private var imageCapture: ImageCapture? = null
+    private var cameraProvider: ProcessCameraProvider? = null
 
-    init {
-        startCamera()
-    }
+    private var isCameraStarted = false
 
-    private fun startCamera() {
+    private fun startCamera(onStarted: () -> Unit) {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
 
         cameraProviderFuture.addListener({
-            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+            cameraProvider = cameraProviderFuture.get()
             val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
 
             imageCapture = ImageCapture.Builder()
@@ -36,12 +32,14 @@ class CameraHelper(private val context: Context, private val lifecycleOwner: Lif
                 .build()
 
             try {
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
+                cameraProvider?.unbindAll()
+                cameraProvider?.bindToLifecycle(
                     lifecycleOwner,
                     cameraSelector,
                     imageCapture
                 )
+                isCameraStarted = true
+                onStarted()
             } catch (exc: Exception) {
                 Log.e("CameraHelper", "Use case binding failed", exc)
             }
@@ -50,6 +48,16 @@ class CameraHelper(private val context: Context, private val lifecycleOwner: Lif
     }
 
     fun takePhoto(onPhotoTaken: (File) -> Unit) {
+        if (!isCameraStarted) {
+            startCamera {
+                capturePhoto(onPhotoTaken)
+            }
+        } else {
+            capturePhoto(onPhotoTaken)
+        }
+    }
+
+    private fun capturePhoto(onPhotoTaken: (File) -> Unit) {
         val imageCapture = imageCapture ?: return
 
         val photoFile = File(
@@ -72,9 +80,15 @@ class CameraHelper(private val context: Context, private val lifecycleOwner: Lif
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     Toast.makeText(context, "Photo capture succeeded: ${photoFile.absolutePath}", Toast.LENGTH_SHORT).show()
                     onPhotoTaken(photoFile)
+                    stopCamera()
                 }
             }
         )
+    }
+
+    private fun stopCamera() {
+        cameraProvider?.unbindAll()
+        isCameraStarted = false
     }
 
     companion object {

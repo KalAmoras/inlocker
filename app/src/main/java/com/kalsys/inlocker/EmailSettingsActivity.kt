@@ -24,6 +24,9 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import android.Manifest
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Button
+import androidx.compose.ui.text.style.TextAlign
 import com.google.android.gms.common.AccountPicker
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
 import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException
@@ -71,7 +74,8 @@ class EmailSettingsActivity : AppCompatActivity() {
             InLockerTheme {
                 EmailSettingsScreen(
                     onSetRecoveryEmail = { requestAccountPicker() },
-                    onSendTestEmail = { sendTestEmail() }
+                    onSendTestEmail = { sendTestEmail() },
+                    onSendPasswordsEmail = { sendPasswordsEmail() }
                 )
             }
         }
@@ -164,7 +168,38 @@ class EmailSettingsActivity : AppCompatActivity() {
                 }
                 return
             }
-            //TODO: Handle Camera Permission
+        }
+    }
+
+    private fun sendPasswordsEmail() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val recipientEmail = getStoredRecipientEmail()
+                if (recipientEmail.isNullOrEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@EmailSettingsActivity, "Recipient email not set", Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+                }
+                emailService.sendPasswordsEmail(SENDER_EMAIL, recipientEmail)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@EmailSettingsActivity, "Passwords email sent successfully!", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: UserRecoverableAuthIOException) {
+                withContext(Dispatchers.Main) {
+                    startActivityForResult(e.intent, REQUEST_AUTHORIZATION)
+                }
+            } catch (e: GoogleJsonResponseException) {
+                Log.e("EmailSettingsActivity", "GoogleJsonResponseException: ${e.details.message}", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@EmailSettingsActivity, "Failed to send passwords email", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.e("EmailSettingsActivity", "Error sending passwords email: ${e.message}", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@EmailSettingsActivity, "Failed to send passwords email", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
@@ -190,17 +225,47 @@ class EmailSettingsActivity : AppCompatActivity() {
     @Composable
     fun EmailSettingsScreen(
         onSetRecoveryEmail: () -> Unit,
-        onSendTestEmail: () -> Unit
+        onSendTestEmail: () -> Unit,
+        onSendPasswordsEmail: () -> Unit,
     ) {
-        Text(
-            "Email Settings",
-            fontSize = 34.sp,
-            lineHeight = 20.sp,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-        )
+        val context = this@EmailSettingsActivity
+
+
+        Row(
+            modifier = Modifier.padding(bottom = 10.dp)
+        ){
+            Text(
+                "Email Settings",
+                fontSize = 34.sp,
+                lineHeight = 20.sp,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+            )
+        }
+        Row( horizontalArrangement = Arrangement.End,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Button(
+                onClick = {
+                    val intent = Intent(context, EmailInstructionActivity::class.java)
+                    startActivity(intent)
+                },
+                modifier = Modifier.padding(end = 12.dp)
+                    .padding(top = 20.dp)
+                    .width(40.dp)
+                    .height(40.dp),
+                shape = CircleShape,
+                contentPadding = PaddingValues(0.dp) // Remove default padding
+            ) {
+                Text(
+                    text = "?",
+                    fontSize = 22.sp,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -245,6 +310,24 @@ class EmailSettingsActivity : AppCompatActivity() {
                     .width(142.dp),
                 shape = RoundedCornerShape(6.dp)
             )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                "Send the list of saved passwords to your recovery email",
+                fontSize = 16.sp,
+                lineHeight = 20.sp,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            )
+            CustomButton(
+                text = "Send Passwords Email",
+                onClick = onSendPasswordsEmail,
+                modifier = Modifier
+                    .height(56.dp)
+                    .width(142.dp),
+                shape = RoundedCornerShape(6.dp)
+            )
         }
     }
 
@@ -254,7 +337,8 @@ class EmailSettingsActivity : AppCompatActivity() {
         InLockerTheme {
             EmailSettingsScreen(
                 onSetRecoveryEmail = {},
-                onSendTestEmail = {}
+                onSendTestEmail = {},
+                onSendPasswordsEmail = {},
             )
         }
     }

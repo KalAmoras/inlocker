@@ -38,7 +38,6 @@ class CreatePasswordActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d("CreatePasswordActivity", "CreatePasswordActivity created")
 
         val passwordDatabase = PasswordDatabase.getInstance(applicationContext)
         passwordDao = passwordDatabase.passwordDao()
@@ -115,7 +114,6 @@ class CreatePasswordActivity : AppCompatActivity() {
                     } else {
                         val newPasswordItem = PasswordItem(chosenApp, password)
                         passwordDao.insert(newPasswordItem)
-                        Log.d("CreatePasswordActivity", "Password inserted for app: $chosenApp")
                     }
                     val resultIntent = Intent().apply {
                         putExtra("chosenApp", chosenApp)
@@ -127,7 +125,6 @@ class CreatePasswordActivity : AppCompatActivity() {
                         finish()
                     }
                 } catch (e: Exception) {
-                    Log.e("CreatePasswordActivity", "Error saving password", e)
                     withContext(Dispatchers.Main) {
                         Toast.makeText(this@CreatePasswordActivity, "Error: Unable to save password", Toast.LENGTH_SHORT).show()
                     }
@@ -140,7 +137,7 @@ class CreatePasswordActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    val functionalities = listOf("uninstall_protection", "delete_all_passwords", "email_service")
+                    val functionalities = listOf("service_switch", "critical_settings")
 
                     functionalities.forEach { functionality ->
                         val existingPasswordItem = passwordDao.getPasswordItem(functionality)
@@ -162,7 +159,6 @@ class CreatePasswordActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@CreatePasswordActivity, "Error: Unable to set default password", Toast.LENGTH_SHORT).show()
                 }
-                Log.e("CreatePasswordActivity", "Setting default password failed: ${e.message}")
                 setResult(Activity.RESULT_CANCELED)
                 finish()
             }
@@ -174,11 +170,10 @@ class CreatePasswordActivity : AppCompatActivity() {
             withContext(Dispatchers.IO) {
                 try {
                     val installedApps = packageManager.getInstalledApplications(0)
-                    Log.d("CreatePasswordActivity", "Installed apps: ${installedApps.map { it.packageName }}")
 
                     //miui.home for the device home page ='desktop', globalminusscreen for the device manager (square button),
                     //latin for the device keyboard, system and systemui are called sometimes when browsing the device, still not clear
-                    //
+                    //incallui for phone calls UI
                     val excludedPackages = listOf(
                         "com.miui.home",
                         "com.mi.android.globalminusscreen",
@@ -186,7 +181,8 @@ class CreatePasswordActivity : AppCompatActivity() {
                         "com.android.systemui",
                         "com.google.android.inputmethod.latin",
                         "com.android.incallui",
-                        "com.google.android.permissioncontroller")
+                        "com.google.android.permissioncontroller",
+                        "com.android")
                     val filteredApps = installedApps.filter { it.packageName !in excludedPackages }
                     Log.d("CreatePasswordActivity", "Filtered apps (excluding $excludedPackages): ${filteredApps.map { it.packageName }}")
 
@@ -195,7 +191,6 @@ class CreatePasswordActivity : AppCompatActivity() {
                     }
 
                     passwordDao.insertOrUpdateAll(passwordItems)
-                    Log.d("CreatePasswordActivity", "Password items inserted/updated: ${passwordItems.map { it.chosenApp }}")
 
                     withContext(Dispatchers.Main) {
                         Toast.makeText(this@CreatePasswordActivity, "Default password set for all apps", Toast.LENGTH_SHORT).show()
@@ -203,7 +198,6 @@ class CreatePasswordActivity : AppCompatActivity() {
                         finish()
                     }
                 } catch (e: Exception) {
-                    Log.e("CreatePasswordActivity", "Error setting default passwords for all apps", e)
                     withContext(Dispatchers.Main) {
                         Toast.makeText(this@CreatePasswordActivity, "Error: Unable to set default password", Toast.LENGTH_SHORT).show()
                     }
