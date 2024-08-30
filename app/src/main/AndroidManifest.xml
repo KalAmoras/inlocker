@@ -20,9 +20,23 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
     <uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
+<!--    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />-->
+
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+<!--    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />-->
+<!--    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />-->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
     <uses-permission android:name="android.permission.USB_PERMISSION"/>
+    <uses-feature android:name="android.hardware.usb.host" />
+
+    <!-- WRITE_EXTERNAL_STORAGE for devices below Android 10 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <!-- READ_EXTERNAL_STORAGE for devices below Android 13 -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
 
     <queries>
         <package android:name="com.miui.securitycenter" />
@@ -78,6 +92,10 @@
             android:name=".InitializationService"
             android:permission="android.permission.FOREGROUND_SERVICE"/>
 
+        <service
+            android:name=".FileMonitoringService"
+            android:exported="false" />
+
         <activity
             android:name=".LockScreenActivity"
             android:launchMode="singleTask"
@@ -113,7 +131,7 @@
 
         <activity android:name=".OptionsInstructionActivity" />
 
-
+        <activity android:name=".UsbDeviceActivity" />
         <receiver
             android:name=".BootReceiver"
             android:enabled="true"
@@ -124,10 +142,20 @@
             </intent-filter>
         </receiver>
 
+        <receiver android:name=".BatteryReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BATTERY_CHANGED" />
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+            </intent-filter>
+        </receiver>
+
         <receiver android:name=".UsbReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
+                <action android:name="com.kalsys.inlocker.USB_PERMISSION" />
                 <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"/>
                 <action android:name="android.hardware.usb.action.USB_DEVICE_DETACHED"/>
             </intent-filter>

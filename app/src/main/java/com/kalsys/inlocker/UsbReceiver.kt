@@ -8,22 +8,26 @@ import android.util.Log
 import android.widget.Toast
 
 class UsbReceiver : BroadcastReceiver() {
+
     override fun onReceive(context: Context?, intent: Intent?) {
         Log.d("UsbReceiver", "onReceive called")
-        if (intent != null) {
-            Log.d("UsbReceiver", "Intent Action: ${intent.action}")
-        }
         when (intent?.action) {
             UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
-                Toast.makeText(context, "USB Device Connected", Toast.LENGTH_SHORT).show()
-                Log.d("UsbReceiver", "USB DEVICE CONNECTED")
+                context?.let {
+                    Toast.makeText(it, "USB Device Connected", Toast.LENGTH_SHORT).show()
+                    Log.d("UsbReceiver", "USB DEVICE CONNECTED")
+                }
             }
             UsbManager.ACTION_USB_DEVICE_DETACHED -> {
-                Toast.makeText(context, "USB Device Disconnected", Toast.LENGTH_SHORT).show()
-                Log.d("UsbReceiver", "USB DEVICE DISCONNECTED")
+                context?.let {
+                    Toast.makeText(it, "USB Device Disconnected", Toast.LENGTH_SHORT).show()
+                    Log.d("UsbReceiver", "USB DEVICE DISCONNECTED")
+                }
+            }
+            "com.kalsys.inlocker.USB_PERMISSION" -> {
             }
             else -> {
-                Log.d("UsbReceiver", "Unknown Action")
+                Log.d("UsbReceiver", "Unknown Action: ${intent?.action}")
             }
         }
     }

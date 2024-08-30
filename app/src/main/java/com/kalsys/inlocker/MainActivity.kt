@@ -44,7 +44,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.kalsys.inlocker.ui.components.CustomButton
@@ -64,43 +63,36 @@ class MainActivity : ComponentActivity() {
         private const val MONITOR_SWITCH = "monitor_switch"
         private const val CREATE_PASSWORD_REQUEST_CODE = 1001
         const val DISABLE_SERVICE_REQUEST_CODE = 1002
-        private const val CAMERA_PERMISSION_CODE = 100
     }
 
-    private val systemAlertWindowRequestCode = 101
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var monitorDao: MonitorDao
     private lateinit var passwordDao: PasswordDao
     private lateinit var passwordChecker: PasswordCheckerImplementation
-
+    private lateinit var batteryReceiver: BatteryReceiver
+    private lateinit var permissionManager: PermissionManager
     private val switchState = mutableStateOf(false)
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d("MainActivity", "onCreate called")
-
+        batteryReceiver = BatteryReceiver()
         sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         monitorDao = PasswordDatabase.getInstance(applicationContext).monitorDao()
         passwordDao = PasswordDatabase.getInstance(applicationContext).passwordDao()
         passwordChecker = PasswordCheckerImplementation(passwordDao)
+        permissionManager = PermissionManager(this)
 
 
         enableEdgeToEdge()
         setContent {
             InLockerTheme {
-                if (!checkSystemAlertWindowPermission()) {
-                    requestSystemAlertWindowPermission()
-                }
-                MyAppContent(
-                    appName = getString(R.string.app_name)
-                )
+                MyAppContent(appName = getString(R.string.app_name))
             }
         }
+
         handlePermissionsAndInstructions()
-        enableEdgeToEdge()
-        checkAccessibilityServiceStatus()
-        hasBackgroundStartPermissionInMIUI(this)
     }
 
     private fun enableService() {
@@ -141,6 +133,8 @@ class MainActivity : ComponentActivity() {
                 putExtra("chosenApp", "service_switch")
             }
             startActivityForResult(intent, DISABLE_SERVICE_REQUEST_CODE)
+
+
         }
     }
 
@@ -159,6 +153,8 @@ class MainActivity : ComponentActivity() {
                                 stopService(intent)
                                 showToast("Service stopped successfully")
                                 switchState.value = false
+                                batteryReceiver.unregister(this@MainActivity)
+                                Log.d("MainActivity", "BatteryReceiver unregistered")
                             }
                         } catch (e: Exception) {
                             Log.e("MainActivity", "Error disabling service", e)
@@ -213,14 +209,19 @@ class MainActivity : ComponentActivity() {
 
 
     private fun startMonitoringService() {
-
         AuthStateManager.resetAuthState(applicationContext)
         lifecycleScope.launch(Dispatchers.IO) {
-            monitorDao.insertMonitor(Monitor(id = 1, shouldMonitor = true))
-            sharedPreferences.edit().putBoolean(MONITOR_SWITCH, true).apply()
+            val shouldMonitor = monitorDao.getMonitor()?.shouldMonitor ?: false
+            sharedPreferences.edit().putBoolean(MONITOR_SWITCH, shouldMonitor).apply()
+
+            if (shouldMonitor) {
+                batteryReceiver.registerForPowerConnection(this@MainActivity)
+                Log.d("MainActivity", "BatteryReceiver registered")
+            }
+
+            val intent = Intent(this@MainActivity, AppMonitorService::class.java)
+            startService(intent)
         }
-        val intent = Intent(this, AppMonitorService::class.java)
-        startService(intent)
     }
 
     private suspend fun getMonitorState(): Boolean {
@@ -233,99 +234,21 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    private fun requestSystemAlertWindowPermission() {
-        val intent = Intent(
-            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-            Uri.parse("package:$packageName")
-        )
-        startActivityForResult(intent, systemAlertWindowRequestCode)
-    }
-
-    private fun checkSystemAlertWindowPermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Settings.canDrawOverlays(this)
-        } else {
-            true
-        }
-    }
-
-    fun hasBackgroundStartPermissionInMIUI(context: Context): Boolean {
-        val intent = Intent().apply {
-            setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.AppPermissionsEditorActivity")
-        }
-        val activityInfo = intent.resolveActivityInfo(context.packageManager, 0)
-        return activityInfo?.exported ?: false
-    }
-
-    private fun checkAccessibilityServiceStatus() {
-        try {
-            val isEnabled = isAccessibilityServiceEnabled(AppMonitorService::class.java)
-            if (!isEnabled) {
-                openAccessibilitySettings()
-            }
-        } catch (e: Exception) {
-        }
-    }
-
-    private fun isAccessibilityServiceEnabled(service: Class<out AccessibilityService>): Boolean {
-
-        val enabledServices = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        )
-
-        if (enabledServices.isNullOrEmpty()) {
-            return false
-        }
-
-        val colonSplitter = TextUtils.SimpleStringSplitter(':')
-        colonSplitter.setString(enabledServices)
-
-        while (colonSplitter.hasNext()) {
-            val componentName = colonSplitter.next()
-            if (componentName.equals(ComponentName(this, service).flattenToString(), ignoreCase = true)) {
-                return true
-            }
-        }
-        return false
-    }
-
-    private fun openAccessibilitySettings() {
-        try {
-            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            startActivity(intent)
-        } catch (e: ActivityNotFoundException) {
-            Log.e("MainActivity", "Error opening accessibility settings", e)
-            Toast.makeText(this, "Unable to open Accessibility Settings", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     private fun handlePermissionsAndInstructions() {
         if (isFirstLaunch()) {
             startActivity(Intent(this, InstructionActivity::class.java))
             markFirstLaunch()
         } else {
-            handlePermissions()
+            permissionManager.checkAndRequestPermissions(this, requestPermissionsLauncher)
         }
     }
 
-    private fun handlePermissions() {
-        val permissions = arrayOf(
-            Manifest.permission.CAMERA,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-
-        if (!hasPermissions(*permissions)) {
-            requestPermissionsLauncher.launch(permissions)
-        }
+    private fun isFirstLaunch(): Boolean {
+        return !sharedPreferences.contains(FIRST_LAUNCH_KEY)
     }
 
-    private fun hasPermissions(vararg permissions: String): Boolean {
-        return permissions.all { permission ->
-            ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
-        }
+    private fun markFirstLaunch() {
+        sharedPreferences.edit().putBoolean(FIRST_LAUNCH_KEY, false).apply()
     }
 
     private val requestPermissionsLauncher = registerForActivityResult(
@@ -336,14 +259,6 @@ class MainActivity : ComponentActivity() {
                 Log.e("MainActivity", "Permission ${entry.key} not granted.")
             }
         }
-    }
-
-    private fun isFirstLaunch(): Boolean {
-        return !sharedPreferences.contains(FIRST_LAUNCH_KEY)
-    }
-
-    private fun markFirstLaunch() {
-        sharedPreferences.edit().putBoolean(FIRST_LAUNCH_KEY, false).apply()
     }
 
      @Composable
@@ -469,6 +384,14 @@ class MainActivity : ComponentActivity() {
                         },
                         modifier = Modifier.padding(8.dp),
                         text = "Options"
+                    )
+                    CustomButton(
+                        onClick = {
+                            val intent = Intent(context, UsbDeviceActivity::class.java)
+                            startActivity(intent)
+                        },
+                        modifier = Modifier.padding(8.dp),
+                        text = "Show USB Devices"
                     )
                 }
             }

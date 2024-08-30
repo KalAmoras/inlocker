@@ -10,6 +10,7 @@ import android.app.PendingIntent
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
@@ -29,6 +30,7 @@ class AppMonitorService : AccessibilityService() {
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private lateinit var passwordDao: PasswordDao
     private lateinit var monitorDao: MonitorDao
+    private lateinit var batteryReceiver: BatteryReceiver
 
 
     companion object {
@@ -38,7 +40,6 @@ class AppMonitorService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!isIgnoringBatteryOptimizations()) {
@@ -55,6 +56,8 @@ class AppMonitorService : AccessibilityService() {
         passwordDao = passwordDatabase.passwordDao()
         monitorDao = passwordDatabase.monitorDao()
 
+        batteryReceiver = BatteryReceiver()
+
         serviceScope.launch {
             val monitor = monitorDao.getMonitor()
             if (monitor?.shouldMonitor == true) {
@@ -65,21 +68,12 @@ class AppMonitorService : AccessibilityService() {
         }
 
         createNotificationChannel()
-
-//        serviceScope.launch {
-//            val monitor = Monitor(id = 1, shouldMonitor = true)
-//            monitorDao.insertMonitor(monitor)
-//        }
-//        createNotificationChannel()
-//        startForeground(NOTIFICATION_ID, createNotification())
-
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        Log.d("AppMonitorService", "onAccessibilityEvent triggered: ${event.eventType}")
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             val packageName = event.packageName?.toString()
-            Log.d("AppMonitorService", "Window state changed, package: $packageName")
+            Log.d("AppMonitorService", "onAccessibilityEvent triggered: ${event.eventType}, Window state changed, package: $packageName")
             if (!packageName.isNullOrEmpty() && !AuthStateManager.isAppAuthenticated(applicationContext, packageName)) {
                 val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
                 if (!keyguardManager.isKeyguardLocked) {
@@ -139,6 +133,7 @@ class AppMonitorService : AccessibilityService() {
         super.onDestroy()
         serviceScope.cancel()
     }
+
 
     private fun stopForegroundService() {
         stopForeground(true)
