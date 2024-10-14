@@ -93,6 +93,13 @@
             android:permission="android.permission.FOREGROUND_SERVICE"/>
 
         <service
+            android:name=".PowerMonitorService"
+            android:permission="android.permission.FOREGROUND_SERVICE"/>
+        <!--android:foregroundServiceType="connectedDevice"-->
+        <!--android:exported="false" -->
+
+
+        <service
             android:name=".FileMonitoringService"
             android:exported="false" />
 
@@ -132,6 +139,7 @@
         <activity android:name=".OptionsInstructionActivity" />
 
         <activity android:name=".UsbDeviceActivity" />
+
         <receiver
             android:name=".BootReceiver"
             android:enabled="true"
@@ -143,11 +151,13 @@
         </receiver>
 
         <receiver android:name=".BatteryReceiver"
+            android:enabled="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BATTERY_CHANGED" />
                 <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
                 <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+                <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </receiver>
 

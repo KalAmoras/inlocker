@@ -30,12 +30,11 @@ class AppMonitorService : AccessibilityService() {
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private lateinit var passwordDao: PasswordDao
     private lateinit var monitorDao: MonitorDao
-    private lateinit var batteryReceiver: BatteryReceiver
 
 
     companion object {
         private const val CHANNEL_ID = "AppMonitorServiceChannel"
-        private const val NOTIFICATION_ID = 2
+        private const val NOTIFICATION_ID = 1
     }
 
     override fun onServiceConnected() {
@@ -52,22 +51,21 @@ class AppMonitorService : AccessibilityService() {
         info.feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
         serviceInfo = info
 
+        createNotificationChannel()
+        startForeground(NOTIFICATION_ID, createNotification())
+
         val passwordDatabase = PasswordDatabase.getInstance(applicationContext)
         passwordDao = passwordDatabase.passwordDao()
         monitorDao = passwordDatabase.monitorDao()
 
-        batteryReceiver = BatteryReceiver()
-
         serviceScope.launch {
             val monitor = monitorDao.getMonitor()
             if (monitor?.shouldMonitor == true) {
-                startForeground(NOTIFICATION_ID, createNotification())
+
             } else {
                 stopForegroundService()
             }
         }
-
-        createNotificationChannel()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
@@ -122,6 +120,23 @@ class AppMonitorService : AccessibilityService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("AppMonitorService", "Service started")
+
+        serviceScope.launch {
+            // Check the state of shouldMonitor in the monitor database
+            val monitor = monitorDao.getMonitor()
+
+            if (monitor?.shouldMonitor == true) {
+                // Continue running the service if shouldMonitor is true
+                Log.d("AppMonitorService", "Monitor is active, service will continue")
+                // Ensure the service runs in the foreground
+                startForeground(NOTIFICATION_ID, createNotification())
+            } else {
+                // Stop the service if shouldMonitor is false
+                Log.d("AppMonitorService", "Monitor is inactive, stopping service")
+                stopForegroundService()
+            }
+        }
+
         return START_STICKY
     }
 
@@ -143,6 +158,7 @@ class AppMonitorService : AccessibilityService() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Log.d("AppMonitorService", "Attempting to create notification channel.")
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
                 "App Monitor Service Channel",
@@ -150,17 +166,22 @@ class AppMonitorService : AccessibilityService() {
             )
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(serviceChannel)
+            Log.d("AppMonitorService", "Notification channel created: $CHANNEL_ID")
+
         }
     }
 
     private fun createNotification(): Notification {
         val notificationIntent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("InLocked")
             .setContentText("You won't get rid of me so easily...")
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.inlocker_eye_icon)
             .setContentIntent(pendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
     }
 

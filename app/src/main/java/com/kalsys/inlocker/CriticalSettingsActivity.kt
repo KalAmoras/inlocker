@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.Alignment
 import androidx.lifecycle.lifecycleScope
@@ -51,6 +52,7 @@ class CriticalSettingsActivity : AppCompatActivity() {
 
     companion object {
         const val RESULT_ENABLE = 1
+        const val REQUEST_CODE_PICK_URI = 2
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,7 +77,8 @@ class CriticalSettingsActivity : AppCompatActivity() {
                     onToggleUninstallProtection = { toggleUninstallProtection() },
                     isAdminActive = isAdminActive.value,
                     onSetDefaultPasswords = { setDefaultPassword() },
-                    onEmailService = { handleEmailService()}
+                    onEmailService = { handleEmailService()},
+                    onSelectUri = { selectUri() }
                 )
             }
         }
@@ -163,33 +166,21 @@ class CriticalSettingsActivity : AppCompatActivity() {
         startActivity(Intent(this@CriticalSettingsActivity, EmailSettingsActivity::class.java))
     }
 
-//    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-//        super.onActivityResult(requestCode, resultCode, data)
-//        Log.d("CriticalSettingsActivity", "onActivityResult called with requestCode: $requestCode, resultCode: $resultCode")
-//        when (requestCode) {
-//            RESULT_ENABLE -> {
-//                if (resultCode == RESULT_OK) {
-//                    Log.d("CriticalSettingsActivity", "RESULT_ENABLE returned RESULT_OK")
-//                    Toast.makeText(this, "Uninstall protection enabled", Toast.LENGTH_SHORT).show()
-//                    _isAdminActive.value = true
-//                } else {
-//                    Toast.makeText(this, "Failed to enable uninstall protection", Toast.LENGTH_SHORT).show()
-//                }
-//            }
-//        }
-//    }
+    private fun selectUri() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        startActivityForResult(intent, REQUEST_CODE_PICK_URI)
+    }
 
-
-    @Composable
-    fun BoxWithLayout(content: @Composable BoxScope.() -> Unit) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-
-        ) {
-            content()
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_CODE_PICK_URI && resultCode == RESULT_OK) {
+            data?.data?.let { uri ->
+                Log.d("CriticalSettingsActivity", "Selected URI: $uri")
+                Toast.makeText(this, "Selected URI: $uri", Toast.LENGTH_SHORT).show()
+            }
         }
     }
+
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun CriticalOptionsScreen(
@@ -197,140 +188,160 @@ class CriticalSettingsActivity : AppCompatActivity() {
         onToggleUninstallProtection: () -> Unit,
         isAdminActive: Boolean,
         onSetDefaultPasswords: () -> Unit,
-        onEmailService: () -> Unit
+        onEmailService: () -> Unit,
+        onSelectUri: () -> Unit
     ) {
         var showToastMessage by remember { mutableStateOf<String?>(null) }
         val context = this@CriticalSettingsActivity
 
-        Row(
-            modifier = Modifier.padding(bottom = 10.dp)
-        ){
-            Text(
-                "Critical Settings",
-                fontSize = 34.sp,
-                lineHeight = 20.sp,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-            )
-        }
-        Row( horizontalArrangement = Arrangement.End,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Button(
-                onClick = {
-                    val intent = Intent(context, CriticalInstructionActivity::class.java)
-                    startActivity(intent)
-                },
-                modifier = Modifier.padding(end = 12.dp)
-                    .padding(top = 20.dp)
-                    .width(40.dp)
-                    .height(40.dp),
-                shape = CircleShape,
-                contentPadding = PaddingValues(0.dp) // Remove default padding
-            ) {
+            Row(
+                modifier = Modifier.padding(bottom = 10.dp)
+            ){
                 Text(
-                    text = "?",
-                    fontSize = 22.sp,
-                    textAlign = TextAlign.Center,
+                    "Critical Settings",
+                    fontSize = 34.sp,
+                    lineHeight = 20.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
                 )
             }
-        }
+            Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = {
+                        val intent = Intent(context, CriticalInstructionActivity::class.java)
+                        startActivity(intent)
+                    },
+                    modifier = Modifier
+                        .padding(end = 12.dp, top = 20.dp)
+                        .size(40.dp),
+                    shape = CircleShape,
+                    contentPadding = PaddingValues(0.dp) // Remove default padding
+                ) {
+                    Text(
+                        text = "?",
+                        fontSize = 22.sp,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
 
-
-        BoxWithLayout {
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 10.dp),
+                    .padding(horizontal = 10.dp)
+                    .padding(top = 80.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
 
+                ) {
+                item {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            "Set a default password for the critical functionalities: Service Switch," +
+                                    "Critical Settings",
+                            fontSize = 16.sp,
+                            lineHeight = 20.sp,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.width(240.dp),
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        CustomButton(
+                            text = "Set Options Password",
+                            onClick = onSetDefaultPasswords,
+                            modifier = Modifier
+                                .height(56.dp)
+                                .width(142.dp),
+                            shape = RoundedCornerShape(6.dp)
+                        )
 
-                Text(
-                    "Set a default password for the critical functionalities below",
-                    fontSize = 16.sp,
-                    lineHeight = 20.sp,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.width(240.dp),
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(modifier = Modifier.height(3.dp))
-                CustomButton(
-                    text = "Set Options Password",
-                    onClick = onSetDefaultPasswords,
-                    modifier = Modifier
-                        .height(56.dp)
-                        .width(142.dp),
-                    shape = RoundedCornerShape(6.dp)
-                )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(
+                            "Enable to protect InLocker from being uninstalled",
+                            fontSize = 16.sp,
+                            lineHeight = 20.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.width(240.dp),
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        CustomButton(
+                            text = if (isAdminActive) "Disable Uninstall Protection" else "Enable Uninstall Protection",
+                            onClick = onToggleUninstallProtection,
+                            modifier = Modifier
+                                .height(56.dp)
+                                .width(152.dp),
+                            shape = RoundedCornerShape(6.dp)
+                        )
 
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    "Enable to protect InLocker from being uninstalled",
-                    fontSize = 16.sp,
-                    lineHeight = 20.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.width(240.dp),
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.height(3.dp))
-                CustomButton(
-                    text = if (isAdminActive) "Disable Uninstall Protection" else "Enable Uninstall Protection",
-                    onClick = onToggleUninstallProtection,
-                    modifier = Modifier
-                        .height(56.dp)
-                        .width(152.dp),
-                    shape = RoundedCornerShape(6.dp)
-                )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(
+                            "Delete all passwords, this will clean the system from all passwords",
+                            fontSize = 16.sp,
+                            lineHeight = 20.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.width(240.dp),
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        CustomButton(
+                            text = "Delete All Passwords",
+                            onClick = onDeletePasswords,
+                            modifier = Modifier
+                                .height(56.dp)
+                                .width(152.dp),
+                            shape = RoundedCornerShape(6.dp)
+                        )
 
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    "Delete all passwords, this will clean the system from all passwords",
-                    fontSize = 16.sp,
-                    lineHeight = 20.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.width(240.dp),
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Spacer(modifier = Modifier.height(3.dp))
-                CustomButton(
-                    text = "Delete All Passwords",
-                    onClick = onDeletePasswords,
-                    modifier = Modifier
-                        .height(56.dp)
-                        .width(152.dp),
-                    shape = RoundedCornerShape(6.dp)
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    "Set an email address for password recovery and theft protection",
-                    fontSize = 16.sp,
-                    lineHeight = 20.sp,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.width(240.dp),
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(modifier = Modifier.height(3.dp))
-                CustomButton(
-                    text = "EmailSettings",
-                    onClick = onEmailService,
-                    modifier = Modifier
-                        .height(56.dp)
-                        .width(152.dp),
-                    shape = RoundedCornerShape(6.dp)
-                )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(
+                            "Set an email address for password recovery and theft protection",
+                            fontSize = 16.sp,
+                            lineHeight = 20.sp,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.width(240.dp),
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        CustomButton(
+                            text = "EmailSettings",
+                            onClick = onEmailService,
+                            modifier = Modifier
+                                .height(56.dp)
+                                .width(152.dp),
+                            shape = RoundedCornerShape(6.dp)
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(
+                            "Select a folder for monitoring.",
+                            fontSize = 16.sp,
+                            lineHeight = 20.sp,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.width(240.dp),
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        CustomButton(
+                            text = "Select Folder",
+                            onClick = onSelectUri,
+                            modifier = Modifier
+                                .height(56.dp)
+                                .width(152.dp),
+                            shape = RoundedCornerShape(6.dp)
+                        )
+                    }
+                }
             }
-
             showToastMessage?.let { message ->
                 ShowToast(message)
                 showToastMessage = null
             }
-        }
     }
+
 
     @Preview(showBackground = true)
     @Composable
@@ -341,7 +352,9 @@ class CriticalSettingsActivity : AppCompatActivity() {
                 onToggleUninstallProtection = { },
                 isAdminActive = false,
                 onSetDefaultPasswords = { },
-                onEmailService = {}
+                onEmailService = {},
+                onSelectUri = {}
+
             )
         }
     }

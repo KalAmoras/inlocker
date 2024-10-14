@@ -1,7 +1,7 @@
 package com.kalsys.inlocker
 
 import android.Manifest
-import android.content.ActivityNotFoundException
+import android.app.Activity
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -12,13 +12,20 @@ import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.datastore.preferences.core.stringPreferencesKey
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
-class PermissionManager(private val context: Context) {
+class PermissionManager(private val activity: ComponentActivity) {
+
     companion object {
-        private const val SYSTEM_ALERT_WINDOW_PERMISSION_CODE = 101
-        private const val DIRECTORY_ACCESS_PERMISSION_CODE = 102
+//        private val DIRECTORY_URI_KEY = stringPreferencesKey("directory_uri")
+
         private val REQUIRED_PERMISSIONS = arrayOf(
             Manifest.permission.CAMERA,
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -26,102 +33,225 @@ class PermissionManager(private val context: Context) {
         )
     }
 
-    fun checkAndRequestPermissions(
-        activity: ComponentActivity,
-        requestPermissionsLauncher: ActivityResultLauncher<Array<String>>
-    ) {
+    private val dataStoreManager = DataStoreManager(activity)
+
+    // Registering result launchers for different permissions
+    private val requestPermissionsLauncher =
+        activity.registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            handlePermissionsResult(permissions)
+            checkAndRequestPermissions()
+            Log.d("PermissionManager", "Permissions requested, re-checking.")
+        }
+
+    private val overlayPermissionLauncher =
+        activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            if (Settings.canDrawOverlays(activity)) {
+                checkAndRequestPermissions()
+                Log.d("PermissionManager", "Overlay permission granted.")
+            } else {
+                showToast("Overlay permission is required for the app to function correctly.")
+                Log.d("PermissionManager", "Overlay permission not granted.")
+            }
+        }
+
+    private val directoryAccessLauncher =
+        activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            handleDirectoryAccessResult(result)
+            checkAndRequestPermissions()
+        }
+
+    private val accessibilityPermissionLauncher =
+        activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            if (isAccessibilityServiceEnabled()) {
+                checkAndRequestPermissions()
+                Log.d("PermissionManager", "Accessibility service is enabled.")
+            } else {
+                showToast("Accessibility permission is required for the app to function correctly.")
+                Log.d("PermissionManager", "Accessibility permission not granted.")
+            }
+        }
+
+    private fun handlePermissionsResult(permissions: Map<String, Boolean>) {
+        permissions.entries.forEach { entry ->
+            val permission = entry.key
+            val isGranted = entry.value
+            if (isGranted) {
+                Log.d("PermissionManager", "$permission granted")
+            } else {
+                Log.d("PermissionManager", "$permission not granted")
+                showToast("$permission is required for the app to function correctly. Please enable it.")
+            }
+        }
+    }
+
+    private fun handleDirectoryAccessResult(result: ActivityResult) {
+        if (result.resultCode == Activity.RESULT_OK) {
+            val uri = result.data?.data
+            if (uri != null) {
+                Log.d("PermissionManager", "Directory access granted: $uri")
+                activity.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+                saveUriToDataStore(uri.toString())
+                checkAndRequestPermissions()
+            } else {
+                Log.d("PermissionManager", "Directory access URI is null")
+                showToast("Please select a valid directory.")
+            }
+        } else {
+            Log.d("PermissionManager", "Directory access was not granted.")
+            showToast("Directory access is required for the app to function correctly.")
+        }
+    }
+
+    fun checkAndRequestPermissions() {
+        Log.d("PermissionManager", "Checking permissions...")
+        val permissionsToCheck = mutableListOf<String>()
+
         if (!hasAllPermissions()) {
-            requestPermissionsLauncher.launch(REQUIRED_PERMISSIONS)
+            Log.d("PermissionManager", "Not all required permissions are granted. Requesting required permissions.")
+            permissionsToCheck.addAll(REQUIRED_PERMISSIONS)
         }
 
         if (!hasOverlayPermission()) {
-            requestOverlayPermission(activity)
+            Log.d("PermissionManager", "Overlay permission is not granted. Requesting overlay permission.")
+            requestOverlayPermission()
+            return
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !hasAccessibilityPermission()) {
-            requestAccessibilityPermission(activity)
+        if (!isAccessibilityServiceEnabled()) {
+            Log.d("PermissionManager", "Accessibility service is not enabled. Requesting accessibility permission.")
+            requestAccessibilityPermission()
+            return
         }
 
-        if (Build.MANUFACTURER.equals("Xiaomi", ignoreCase = true) && !hasBackgroundStartPermissionInMIUI(context)) {
-            //TODO: Worked before, but the call for the overlay permission also shows this permission in the same menu
-//            requestBackgroundStartPermissionInMIUI(activity)
+        if (Build.MANUFACTURER.equals("Xiaomi", ignoreCase = true) && !hasBackgroundStartPermissionInMIUI()) {
+            Log.d("PermissionManager", "Background start permission in MIUI is not granted. Requesting permission.")
+            requestBackgroundStartPermissionInMIUI()
+            return
         }
-        //TODO: Breaks Accessibility permission call, needs working
-//        requestDirectoryAccess(activity)
+
+        CoroutineScope(Dispatchers.Main).launch {
+            if (!hasDirectoryPermission()) {
+                Log.d("PermissionManager", "Directory access permission is not granted. Requesting directory access.")
+                requestDirectoryAccess()
+                return@launch
+            }
+
+            if (permissionsToCheck.isNotEmpty()) {
+                Log.d("PermissionManager", "Launching permission requests for: ${permissionsToCheck.joinToString()}")
+                requestPermissionsLauncher.launch(permissionsToCheck.toTypedArray())
+            } else {
+                Log.d("PermissionManager", "All required permissions are granted.")
+            }
+        }
+    }
+
+    private fun requestOverlayPermission() {
+        val intent = Intent(
+            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            Uri.parse("package:${activity.packageName}")
+        )
+        overlayPermissionLauncher.launch(intent)
+    }
+
+    private fun requestAccessibilityPermission() {
+        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        accessibilityPermissionLauncher.launch(intent)
+    }
+
+    private fun requestDirectoryAccess() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+            addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        directoryAccessLauncher.launch(intent)
+    }
+
+    private fun requestBackgroundStartPermissionInMIUI() {
+        try {
+            val intent = Intent().apply {
+                component = ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")
+            }
+            activity.startActivity(intent)
+        } catch (e: Exception) {
+            val fallbackIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:${activity.packageName}")
+            }
+            activity.startActivity(fallbackIntent)
+        }
     }
 
     private fun hasAllPermissions(): Boolean {
         return REQUIRED_PERMISSIONS.all { permission ->
-            ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED
         }
     }
 
     private fun hasOverlayPermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Settings.canDrawOverlays(context)
+            Settings.canDrawOverlays(activity)
         } else {
             true
         }
     }
 
-    private fun requestOverlayPermission(activity: ComponentActivity) {
-        val intent = Intent(
-            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-            Uri.parse("package:${context.packageName}")
-        )
-        activity.startActivityForResult(intent, SYSTEM_ALERT_WINDOW_PERMISSION_CODE)
-    }
-
-    private fun requestDirectoryAccess(activity: ComponentActivity) {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
-            addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        activity.startActivityForResult(intent, DIRECTORY_ACCESS_PERMISSION_CODE)
-    }
-
-    private fun hasAccessibilityPermission(): Boolean {
+    private fun isAccessibilityServiceEnabled(): Boolean {
         val enabledServices = Settings.Secure.getString(
-            context.contentResolver,
+            activity.contentResolver,
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
         ) ?: ""
-        Log.d("PermissionManager", "Enabled Accessibility Services: $enabledServices")
-        val componentName = ComponentName(context, AppMonitorService::class.java).flattenToString()
+        val componentName = ComponentName(activity, AppMonitorService::class.java).flattenToString()
         return enabledServices.split(':').any { service ->
             service.equals(componentName, ignoreCase = true)
         }
     }
 
-    private fun requestAccessibilityPermission(activity: ComponentActivity) {
-        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
+    private fun hasBackgroundStartPermissionInMIUI(): Boolean {
         try {
-            activity.startActivityForResult(intent, SYSTEM_ALERT_WINDOW_PERMISSION_CODE)
+            val intent = Intent().apply {
+                setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.AppPermissionsEditorActivity")
+            }
+            val resolveInfo = activity.packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+            if (resolveInfo != null) {
+                Log.d("PermissionManager", "MIUI permission screen is available. Background permission might not be granted.")
+                return false
+            }
         } catch (e: Exception) {
-            Log.e("PermissionManager", "Error opening Accessibility Settings", e)
-            Toast.makeText(context, "Unable to open Accessibility Settings", Toast.LENGTH_SHORT).show()
+            Log.d("PermissionManager", "Error checking MIUI background permission: ${e.message}")
+        }
+        return true
+    }
+
+    private suspend fun hasDirectoryPermission(): Boolean {
+        val persistedUri = getUriFromDataStore()
+        val permissions = activity.contentResolver.persistedUriPermissions
+        val hasPermission = permissions.any { it.uri.toString() == persistedUri && it.isReadPermission }
+
+        if (hasPermission) {
+            Log.d("PermissionManager", "Directory permission is already granted: $persistedUri")
+        } else {
+            Log.d("PermissionManager", "Directory permission is not granted.")
+        }
+
+        return hasPermission
+    }
+
+    private fun saveUriToDataStore(uri: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            dataStoreManager.saveFolderUri(uri)
+            Log.d("PermissionManager", "URI saved to DataStore: $uri")
         }
     }
 
-    private fun hasBackgroundStartPermissionInMIUI(context: Context): Boolean {
-        val intent = Intent().apply {
-            setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.AppPermissionsEditorActivity")
-        }
-        val activityInfo = intent.resolveActivityInfo(context.packageManager, 0)
-        return activityInfo?.exported ?: false
-    }
-    private fun requestBackgroundStartPermissionInMIUI(activity: ComponentActivity) {
-        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-            data = Uri.parse("package:${context.packageName}")
-        }
-        try {
-            activity.startActivityForResult(intent, SYSTEM_ALERT_WINDOW_PERMISSION_CODE)
-        } catch (e: Exception) {
-            Log.e("PermissionManager", "Error opening App Settings", e)
-            Toast.makeText(context, "Unable to open App Settings. Please manually enable the required permissions.", Toast.LENGTH_SHORT).show()
-        }
+    private suspend fun getUriFromDataStore(): String? {
+        return dataStoreManager.getFolderUri().first()
     }
 
-
+    private fun showToast(message: String) {
+        Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
+    }
 }

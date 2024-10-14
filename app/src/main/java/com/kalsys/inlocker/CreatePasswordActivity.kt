@@ -26,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.kalsys.inlocker.ui.components.PasswordTextField
+import com.kalsys.inlocker.ui.screens.CreatePasswordScreen
 import com.kalsys.inlocker.ui.theme.InLockerTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -61,45 +62,6 @@ class CreatePasswordActivity : AppCompatActivity() {
                     }
                 }
             )
-        }
-    }
-
-    @Composable
-    fun CreatePasswordScreen(
-        chosenApp: String?,
-        isSettingDefaultPassword: Boolean,
-        isSettingDefaultPasswordForAll: Boolean,
-        onSavePassword: (String) -> Unit
-    ) {
-        var password by remember { mutableStateOf("") }
-        val placeholderText = PlaceholderTextHelper.getPlaceholderTextOnCreatePassword(chosenApp)
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
-            PasswordTextField(
-                label = placeholderText,
-                password = password,
-                onPasswordChange = { password = it },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = {
-                    if (password.isNotBlank()) {
-                        onSavePassword(password)
-                    } else {
-                        Toast.makeText(this@CreatePasswordActivity, "Password cannot be blank", Toast.LENGTH_SHORT).show()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Save Password")
-            }
         }
     }
 
@@ -205,18 +167,4 @@ class CreatePasswordActivity : AppCompatActivity() {
             }
         }
     }
-
-    @Preview(showBackground = true)
-    @Composable
-    fun CreatePasswordPreview() {
-        InLockerTheme {
-            CreatePasswordScreen(
-                chosenApp = {}.toString(),
-                isSettingDefaultPassword = false,
-                isSettingDefaultPasswordForAll = false,
-                onSavePassword = {}
-            )
-        }
-    }
-
 }

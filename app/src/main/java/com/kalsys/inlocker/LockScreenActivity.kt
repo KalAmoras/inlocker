@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.Trace
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
@@ -19,6 +20,7 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccoun
 import com.google.api.services.gmail.GmailScopes
 import com.kalsys.inlocker.ui.components.CustomButton
 import com.kalsys.inlocker.ui.components.PasswordTextField
+import com.kalsys.inlocker.ui.screens.LockScreen
 import com.kalsys.inlocker.ui.theme.InLockerTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,21 +41,31 @@ class LockScreenActivity : AppCompatActivity() {
     private val emailScope = CoroutineScope(Dispatchers.IO + Job())
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Trace.beginSection("LockScreenActivity_onCreate")
         super.onCreate(savedInstanceState)
 
+        Trace.beginSection("Initialize_Database")
         val passwordDatabase = PasswordDatabase.getInstance(applicationContext)
         passwordDao = passwordDatabase.passwordDao()
+        Trace.endSection()
 
+        Trace.beginSection("Initialize_Credentials")
         val credential = GoogleAccountCredential.usingOAuth2(
             this, Collections.singletonList(GmailScopes.GMAIL_SEND)
         )
         credential.selectedAccountName = getStoredRecipientEmail()
         emailService = EmailService(this, credential)
+        Trace.endSection()
+
+        Trace.beginSection("Initialize_Helpers")
         locationHelper = LocationHelper(this)
         cameraHelper = CameraHelper(this, this)
+        Trace.endSection()
+
 
         appPackageName = intent.getStringExtra("chosenApp") ?: ""
 
+        Trace.beginSection("SetContent")
         setContent {
             InLockerTheme {
                 LockScreen(
@@ -66,6 +78,8 @@ class LockScreenActivity : AppCompatActivity() {
                 )
             }
         }
+        Trace.endSection()
+        Trace.endSection()
     }
 
     private fun handlePasswordVerification(chosenApp: String) {
@@ -83,15 +97,24 @@ class LockScreenActivity : AppCompatActivity() {
     }
 
     private fun verifyPassword(password: String, onPasswordVerified: (String) -> Unit) {
+
+        Trace.beginSection("verifyPassword")
+
         if (appPackageName.isNotEmpty()) {
             lifecycleScope.launch {
+
+                Trace.beginSection("PasswordDao_getPasswordItem")
                 val passwordItem = withContext(Dispatchers.IO) {
                     passwordDao.getPasswordItem(appPackageName)
                 }
+                Trace.endSection()
+
 
                 try {
                     if (passwordItem != null && passwordItem.password == password) {
+                        Trace.beginSection("SetAppAuthenticated")
                         AuthStateManager.setAppAuthenticated(applicationContext, appPackageName)
+                        Trace.endSection()
                         onPasswordVerified(appPackageName)
                     } else {
                         handleFailedPassword()
@@ -105,12 +128,19 @@ class LockScreenActivity : AppCompatActivity() {
         } else {
             Toast.makeText(this, "App package name is null or empty", Toast.LENGTH_SHORT).show()
         }
+        Trace.endSection()
     }
 
     private fun handleFailedPassword() {
+        Trace.beginSection("handleFailedPassword")
         if (shouldSendEmail()) {
+            Trace.beginSection("CameraHelper_takePhoto")
             cameraHelper.takePhoto { photoFile ->
+                Trace.endSection()
+
+                Trace.beginSection("LocationHelper_getCurrentLocation")
                 locationHelper.getCurrentLocation { location ->
+                    Trace.endSection()
                     location?.let {
                         val locationText = "Latitude: ${location.latitude}, Longitude: ${location.longitude}"
                         val senderEmail = getStoredRecipientEmail()
@@ -118,8 +148,11 @@ class LockScreenActivity : AppCompatActivity() {
                         Log.d("LockScreenActivity", "Obtained location: Latitude = ${location.latitude}, Longitude = ${location.longitude}")
 
                         if (senderEmail != null && recipientEmail != null && photoFile != null) {
+                            Trace.beginSection("EmailService_sendEmail")
                             emailService.sendLocationAndPhotoEmail(senderEmail, recipientEmail, locationText, photoFile)
                             saveLastEmailSentTime()
+                            Trace.endSection()
+
                         } else {
                             Log.e("LockScreenActivity", "Email or photo is null, cannot send email")
                         }
@@ -129,6 +162,8 @@ class LockScreenActivity : AppCompatActivity() {
                 }
             }
         }
+        Trace.endSection()
+
     }
 
     private fun launchApp(appPackageName: String) {
@@ -188,45 +223,3 @@ class LockScreenActivity : AppCompatActivity() {
     }
 }
 
-@Composable
-fun LockScreen(
-    appPackageName: String,
-    onUnlockClicked: (String) -> Unit
-) {
-    var password by remember { mutableStateOf("") }
-    val placeholderText = PlaceholderTextHelper.getPlaceholderText(appPackageName)
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        PasswordTextField(
-            label = placeholderText,
-            password = password,
-            onPasswordChange = { password = it },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        CustomButton(
-            text = "Unlock",
-            onClick = {
-                onUnlockClicked(password)
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun LockScreenPreview() {
-    InLockerTheme {
-        LockScreen(
-            appPackageName = "com.example.app",
-            onUnlockClicked = {}
-        )
-    }
-}

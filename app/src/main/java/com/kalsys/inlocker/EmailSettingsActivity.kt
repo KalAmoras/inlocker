@@ -33,6 +33,7 @@ import com.google.api.client.googleapis.extensions.android.gms.auth.UserRecovera
 import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.services.gmail.GmailScopes
 import com.kalsys.inlocker.ui.components.CustomButton
+import com.kalsys.inlocker.ui.screens.EmailSettingsScreen
 import com.kalsys.inlocker.ui.theme.InLockerTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -219,127 +220,6 @@ class EmailSettingsActivity : AppCompatActivity() {
             REQUEST_AUTHORIZATION -> if (resultCode == RESULT_OK) {
                 sendTestEmail()
             }
-        }
-    }
-
-    @Composable
-    fun EmailSettingsScreen(
-        onSetRecoveryEmail: () -> Unit,
-        onSendTestEmail: () -> Unit,
-        onSendPasswordsEmail: () -> Unit,
-    ) {
-        val context = this@EmailSettingsActivity
-
-
-        Row(
-            modifier = Modifier.padding(bottom = 10.dp)
-        ){
-            Text(
-                "Email Settings",
-                fontSize = 34.sp,
-                lineHeight = 20.sp,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-            )
-        }
-        Row( horizontalArrangement = Arrangement.End,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Button(
-                onClick = {
-                    val intent = Intent(context, EmailInstructionActivity::class.java)
-                    startActivity(intent)
-                },
-                modifier = Modifier.padding(end = 12.dp)
-                    .padding(top = 20.dp)
-                    .width(40.dp)
-                    .height(40.dp),
-                shape = CircleShape,
-                contentPadding = PaddingValues(0.dp) // Remove default padding
-            ) {
-                Text(
-                    text = "?",
-                    fontSize = 22.sp,
-                    textAlign = TextAlign.Center,
-                )
-            }
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-
-        ) {
-
-            Text(
-                "This email will receive the list of passwords and the data sent by InLocker",
-                fontSize = 16.sp,
-                lineHeight = 20.sp,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
-            )
-            CustomButton(
-                text = "Set Recovery Email",
-                onClick = onSetRecoveryEmail,
-                modifier = Modifier
-                    .height(56.dp)
-                    .width(142.dp),
-                shape = RoundedCornerShape(6.dp)
-            )
-            Spacer(modifier = Modifier. height(10.dp))
-            Text(
-                "Send a test email to verify if your account is receiving emails from InLocker",
-                fontSize = 16.sp,
-                lineHeight = 20.sp,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
-            )
-            CustomButton(
-                text = "Send Test Email",
-                onClick = onSendTestEmail,
-                modifier = Modifier
-                    .height(56.dp)
-                    .width(142.dp),
-                shape = RoundedCornerShape(6.dp)
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                "Send the list of saved passwords to your recovery email",
-                fontSize = 16.sp,
-                lineHeight = 20.sp,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
-            )
-            CustomButton(
-                text = "Send Passwords Email",
-                onClick = onSendPasswordsEmail,
-                modifier = Modifier
-                    .height(56.dp)
-                    .width(142.dp),
-                shape = RoundedCornerShape(6.dp)
-            )
-        }
-    }
-
-    @Preview(showBackground = true)
-    @Composable
-    fun EmailSettingsPreview() {
-        InLockerTheme {
-            EmailSettingsScreen(
-                onSetRecoveryEmail = {},
-                onSendTestEmail = {},
-                onSendPasswordsEmail = {},
-            )
         }
     }
 }

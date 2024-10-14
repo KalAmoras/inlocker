@@ -1,7 +1,7 @@
 package com.kalsys.inlocker
 
+import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -14,20 +14,23 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kalsys.inlocker.ui.theme.InLockerTheme
 
-class UsbDeviceActivity : ComponentActivity(), BatteryReceiver.BatteryListener {
+class UsbDeviceActivity : ComponentActivity(), BatteryReceiver.BatteryLevelListener, BatteryReceiver.ChargingStatusListener {
 
     private lateinit var batteryReceiver: BatteryReceiver
     private var devices by mutableStateOf(listOf<UsbDeviceInfo>())
     private var isUsbCharging by mutableStateOf(false)
     private var isAcCharging by mutableStateOf(false)
-    private var voltage by mutableStateOf(0.0)
-    private var temperature by mutableStateOf(0.0)
+    private var voltage by mutableDoubleStateOf(0.0)
+    private var temperature by mutableDoubleStateOf(0.0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        batteryReceiver = BatteryReceiver()
-        batteryReceiver.registerForBatteryChange(this)
+        batteryReceiver = BatteryReceiver().apply {
+            setBatteryLevelListener(this@UsbDeviceActivity)
+            setChargingStatusListener(this@UsbDeviceActivity)
+            registerForBatteryChange(this@UsbDeviceActivity)
+        }
 
         Log.d("UsbDeviceActivity", "BatteryReceiver registered")
 
@@ -38,17 +41,19 @@ class UsbDeviceActivity : ComponentActivity(), BatteryReceiver.BatteryListener {
         }
     }
 
-    override fun onBatteryStateChanged(isCharging: Boolean, usbCharge: Boolean, acCharge: Boolean, voltage: Double, temperature: Double) {
+    override fun onBatteryLevelChanged(level: Int) {
+        // Handle battery level change if needed
+    }
+
+    override fun onChargingStatusChanged(isCharging: Boolean, usbCharge: Boolean, acCharge: Boolean) {
         isUsbCharging = usbCharge
         isAcCharging = acCharge
-        this.voltage = voltage
-        this.temperature = temperature
-        Log.d("UsbDeviceActivity", "Battery state changed - isUsbCharging: $isUsbCharging, isAcCharging: $isAcCharging, Voltage: $voltage, Temperature: $temperature")
+        Log.d("UsbDeviceActivity", "Battery state changed - isUsbCharging: $isUsbCharging, isAcCharging: $isAcCharging")
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        unregisterReceiver(batteryReceiver)
+        batteryReceiver.unregister(this)
         Log.d("UsbDeviceActivity", "BatteryReceiver unregistered")
     }
 }
