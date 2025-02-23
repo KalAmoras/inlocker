@@ -1,7 +1,7 @@
 # **InLocker**
 
 
-![Inlocker Logo](https://github.com/user-attachments/assets/99000a8e-3663-4078-8c5e-ceff9ebff249)
+<img src="https://github.com/user-attachments/assets/99000a8e-3663-4078-8c5e-ceff9ebff249" alt="Inlocker Logo" width="200px">
 
 
 This app was developed on Kotlin for Android devices.
