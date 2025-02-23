@@ -24,7 +24,6 @@ import kotlinx.coroutines.launch
 class PermissionManager(private val activity: ComponentActivity) {
 
     companion object {
-//        private val DIRECTORY_URI_KEY = stringPreferencesKey("directory_uri")
 
         private val REQUIRED_PERMISSIONS = arrayOf(
             Manifest.permission.CAMERA,
@@ -33,9 +32,7 @@ class PermissionManager(private val activity: ComponentActivity) {
         )
     }
 
-    private val dataStoreManager = DataStoreManager(activity)
 
-    // Registering result launchers for different permissions
     private val requestPermissionsLauncher =
         activity.registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             handlePermissionsResult(permissions)
@@ -52,12 +49,6 @@ class PermissionManager(private val activity: ComponentActivity) {
                 showToast("Overlay permission is required for the app to function correctly.")
                 Log.d("PermissionManager", "Overlay permission not granted.")
             }
-        }
-
-    private val directoryAccessLauncher =
-        activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            handleDirectoryAccessResult(result)
-            checkAndRequestPermissions()
         }
 
     private val accessibilityPermissionLauncher =
@@ -84,26 +75,6 @@ class PermissionManager(private val activity: ComponentActivity) {
         }
     }
 
-    private fun handleDirectoryAccessResult(result: ActivityResult) {
-        if (result.resultCode == Activity.RESULT_OK) {
-            val uri = result.data?.data
-            if (uri != null) {
-                Log.d("PermissionManager", "Directory access granted: $uri")
-                activity.contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                )
-                saveUriToDataStore(uri.toString())
-                checkAndRequestPermissions()
-            } else {
-                Log.d("PermissionManager", "Directory access URI is null")
-                showToast("Please select a valid directory.")
-            }
-        } else {
-            Log.d("PermissionManager", "Directory access was not granted.")
-            showToast("Directory access is required for the app to function correctly.")
-        }
-    }
 
     fun checkAndRequestPermissions() {
         Log.d("PermissionManager", "Checking permissions...")
@@ -133,12 +104,6 @@ class PermissionManager(private val activity: ComponentActivity) {
         }
 
         CoroutineScope(Dispatchers.Main).launch {
-            if (!hasDirectoryPermission()) {
-                Log.d("PermissionManager", "Directory access permission is not granted. Requesting directory access.")
-                requestDirectoryAccess()
-                return@launch
-            }
-
             if (permissionsToCheck.isNotEmpty()) {
                 Log.d("PermissionManager", "Launching permission requests for: ${permissionsToCheck.joinToString()}")
                 requestPermissionsLauncher.launch(permissionsToCheck.toTypedArray())
@@ -161,14 +126,6 @@ class PermissionManager(private val activity: ComponentActivity) {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
         accessibilityPermissionLauncher.launch(intent)
-    }
-
-    private fun requestDirectoryAccess() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
-            addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        directoryAccessLauncher.launch(intent)
     }
 
     private fun requestBackgroundStartPermissionInMIUI() {
@@ -226,30 +183,6 @@ class PermissionManager(private val activity: ComponentActivity) {
         return true
     }
 
-    private suspend fun hasDirectoryPermission(): Boolean {
-        val persistedUri = getUriFromDataStore()
-        val permissions = activity.contentResolver.persistedUriPermissions
-        val hasPermission = permissions.any { it.uri.toString() == persistedUri && it.isReadPermission }
-
-        if (hasPermission) {
-            Log.d("PermissionManager", "Directory permission is already granted: $persistedUri")
-        } else {
-            Log.d("PermissionManager", "Directory permission is not granted.")
-        }
-
-        return hasPermission
-    }
-
-    private fun saveUriToDataStore(uri: String) {
-        CoroutineScope(Dispatchers.IO).launch {
-            dataStoreManager.saveFolderUri(uri)
-            Log.d("PermissionManager", "URI saved to DataStore: $uri")
-        }
-    }
-
-    private suspend fun getUriFromDataStore(): String? {
-        return dataStoreManager.getFolderUri().first()
-    }
 
     private fun showToast(message: String) {
         Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()

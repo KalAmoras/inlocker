@@ -42,13 +42,9 @@ class BatteryReceiver : BroadcastReceiver() {
 
         when (intent.action) {
             Intent.ACTION_POWER_CONNECTED -> {
-                if (!isServiceRunning(context, FileMonitoringService::class.java)) {
-                    Log.d("BatteryReceiver", "Starting FileMonitoringService")
                     Toast.makeText(context, "Power connected. Monitoring started.", Toast.LENGTH_LONG).show()
-                }
             }
             Intent.ACTION_POWER_DISCONNECTED -> {
-                Log.d("BatteryReceiver", "Stopping FileMonitoringService")
                 Toast.makeText(context, "Power disconnected. Monitoring stopped.", Toast.LENGTH_LONG).show()
             }
         }

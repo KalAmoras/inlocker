@@ -296,43 +296,7 @@ class CriticalSettingsActivity : AppCompatActivity() {
                                 .width(152.dp),
                             shape = RoundedCornerShape(6.dp)
                         )
-
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            "Set an email address for password recovery and theft protection",
-                            fontSize = 16.sp,
-                            lineHeight = 20.sp,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            modifier = Modifier.width(240.dp),
-                            textAlign = TextAlign.Center,
-                        )
-                        Spacer(modifier = Modifier.height(3.dp))
-                        CustomButton(
-                            text = "EmailSettings",
-                            onClick = onEmailService,
-                            modifier = Modifier
-                                .height(56.dp)
-                                .width(152.dp),
-                            shape = RoundedCornerShape(6.dp)
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            "Select a folder for monitoring.",
-                            fontSize = 16.sp,
-                            lineHeight = 20.sp,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            modifier = Modifier.width(240.dp),
-                            textAlign = TextAlign.Center,
-                        )
-                        Spacer(modifier = Modifier.height(3.dp))
-                        CustomButton(
-                            text = "Select Folder",
-                            onClick = onSelectUri,
-                            modifier = Modifier
-                                .height(56.dp)
-                                .width(152.dp),
-                            shape = RoundedCornerShape(6.dp)
-                        )
+                        
                     }
                 }
             }
