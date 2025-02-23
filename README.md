@@ -1,8 +1,7 @@
 #**InLocker**
 
-<?xml version="1.0" encoding="utf-8"?>
 <!-- Generator: Adobe Illustrator 23.0.2, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
-<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+<svg version="1.1" id="Layer_1" width="200" height="auto" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
 	 viewBox="0 0 106.6 144.6" style="enable-background:new 0 0 106.6 144.6;" xml:space="preserve">
 <style type="text/css">
 	.st0{fill:#052867;}
@@ -31,6 +30,9 @@ This app was developed on Kotlin for Android devices.
 Inlocker can set passwords for every app the user has installed in their devices,
 for when they are accessed by malicious user an overlay screen will block their access without the set password.
 Passwords can be set individually or just one for all the apps, whichever the user desires.
+
+<img src="https://github.com/user-attachments/assets/a18d1081-114f-4cee-bbbe-729764cd916e" alt="App List" width="300"/>
+
 ![app list](https://github.com/user-attachments/assets/a18d1081-114f-4cee-bbbe-729764cd916e)
 
 When the malicious user inputs a wrong password, the camera will take a frontal picture and send it
