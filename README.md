@@ -1,7 +1,7 @@
 #**InLocker**
 
 <!-- Generator: Adobe Illustrator 23.0.2, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
-<svg version="1.1" id="Layer_1" width="200" height="auto" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+<svg version="1.1" id="Layer_1" width="200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
 	 viewBox="0 0 106.6 144.6" style="enable-background:new 0 0 106.6 144.6;" xml:space="preserve">
 </style>
 <g>
@@ -31,8 +31,6 @@ Passwords can be set individually or just one for all the apps, whichever the us
 
 <img src="https://github.com/user-attachments/assets/a18d1081-114f-4cee-bbbe-729764cd916e" alt="App List" width="300"/>
 
-![app list](https://github.com/user-attachments/assets/a18d1081-114f-4cee-bbbe-729764cd916e)
-
 When the malicious user inputs a wrong password, the camera will take a frontal picture and send it
 to the email address previously selected by the user, along with the device location in coordinates.
 
@@ -41,23 +39,24 @@ if the malicious user tries to uninstall to remove the overlaying effect.
 
 <img src="https://github.com/user-attachments/assets/d8b3ebfd-e0f9-431f-b4f4-cc52b0c0c2e7" alt="Critical Settings" width="300"/>
 
-![Critical Settings](https://github.com/user-attachments/assets/d8b3ebfd-e0f9-431f-b4f4-cc52b0c0c2e7)
-
 obs: Email services won't work right now because it is still in testing and developing. You might want to use your own Gmail API to send emails to your chosen address.
 
 This app asks for some permissions which the user may find invasive but after specific android updates, apps must ask the user for permissions
 such as Accessibility and Display Pop-up Overlays to function as intended. 
 
-<img src="https://github.com/user-attachments/assets/fc34eecf-9e9f-4b19-9aef-55ea8590e600" alt="Accessibility" width="300"/>
+<img src="https://github.com/user-attachments/assets/fc34eecf-9e9f-4b19-9aef-55ea8590e600" alt="accessibility" width="300"/>
 
-![accessibility](https://github.com/user-attachments/assets/fc34eecf-9e9f-4b19-9aef-55ea8590e600)
+<img src="https://github.com/user-attachments/assets/5d9e8362-061b-4b88-8b34-4272ccba56cf" alt="accessibility2" width="300"/>
 
-![accessibility2](https://github.com/user-attachments/assets/5d9e8362-061b-4b88-8b34-4272ccba56cf)
+<img src="https://github.com/user-attachments/assets/cf2d8d9a-6310-4fc7-beda-86df0c2e45d8" alt="battery1" width="300"/>
 
-![battery1](https://github.com/user-attachments/assets/cf2d8d9a-6310-4fc7-beda-86df0c2e45d8)
+<img src="https://github.com/user-attachments/assets/d50c8759-8d30-464f-899a-911e97c173ba" alt="permissions" width="300"/>
 
-![permissions](https://github.com/user-attachments/assets/d50c8759-8d30-464f-899a-911e97c173ba)
+<img src="https://github.com/user-attachments/assets/1d87a073-e291-463a-b537-36e6031be812" alt="overlay" width="300"/>
 
-![overlay](https://github.com/user-attachments/assets/1d87a073-e291-463a-b537-36e6031be812)
+
+
+
+
 
 Don't worry, they can be removed whenever the user wishes. When InLocker is installed, enabled and with the passwords set, the device Settings menu will be protected by the password the user has set.
