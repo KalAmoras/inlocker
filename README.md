@@ -1,12 +1,12 @@
 # **InLocker**
 
 
-<img src="https://github.com/user-attachments/assets/99000a8e-3663-4078-8c5e-ceff9ebff249" alt="Inlocker Logo" width="200px">
+<img src="https://github.com/user-attachments/assets/99000a8e-3663-4078-8c5e-ceff9ebff249" alt="Inlocker Logo" width="200px">  
 
 
 
 
-This app was developed on Kotlin for Android devices.
+This app was developed on Kotlin for Android devices.  
 
 Inlocker can set passwords for every app the user has installed in their devices,
 for when they are accessed by malicious user an overlay screen will block their access without the set password.
