@@ -5,22 +5,25 @@
 
 
 
-
+<br>
 This app was developed on Kotlin for Android devices.  
 
 Inlocker can set passwords for every app the user has installed in their devices,
 for when they are accessed by malicious user an overlay screen will block their access without the set password.
 Passwords can be set individually or just one for all the apps, whichever the user desires.
 
+<br>
 <img src="https://github.com/user-attachments/assets/a18d1081-114f-4cee-bbbe-729764cd916e" alt="App List" width="300"/>
+<br>
 
 When the malicious user inputs a wrong password, the camera will take a frontal picture and send it
 to the email address previously selected by the user, along with the device location in coordinates.
 
 The app also gives the option of setting the app as a device administrator, blocking uninstalling
 if the malicious user tries to uninstall to remove the overlaying effect.
-
+<br>
 <img src="https://github.com/user-attachments/assets/d8b3ebfd-e0f9-431f-b4f4-cc52b0c0c2e7" alt="Critical Settings" width="300"/>
+<br>
 
 obs: Email services won't work right now because it is still in testing and developing. You might want to use your own Gmail API to send emails to your chosen address.
 
