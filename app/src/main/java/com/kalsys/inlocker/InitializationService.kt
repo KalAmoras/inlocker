@@ -83,10 +83,15 @@ class InitializationService : Service() {
                 updateNotification("Initialization complete. Locked.")
 
                 val monitorServiceIntent = Intent(applicationContext, AppMonitorService::class.java)
+//                val powerMonitorIntent = Intent(applicationContext, PowerMonitorService::class.java)
+
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     startForegroundService(monitorServiceIntent)
+//                    startForegroundService(powerMonitorIntent)
+
                 } else {
                     startService(monitorServiceIntent)
+//                    startService(powerMonitorIntent)
                 }
 
                 Thread.sleep(500)

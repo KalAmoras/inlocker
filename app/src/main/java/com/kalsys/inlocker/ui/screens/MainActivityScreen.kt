@@ -40,7 +40,7 @@ import com.kalsys.inlocker.AppOptionsActivity
 import com.kalsys.inlocker.InstructionActivity
 import com.kalsys.inlocker.MainActivity
 import com.kalsys.inlocker.R
-import com.kalsys.inlocker.UsbDeviceActivity
+//import com.kalsys.inlocker.UsbDeviceActivity
 import com.kalsys.inlocker.ui.components.CustomButton
 import com.kalsys.inlocker.ui.theme.InLockerTheme
 
@@ -172,14 +172,15 @@ fun MainActivityScreen(
                     modifier = Modifier.padding(8.dp),
                     text = "Options"
                 )
-                CustomButton(
-                    onClick = {
-                        val intent = Intent(context, UsbDeviceActivity::class.java)
-                        context.startActivity(intent)
-                    },
-                    modifier = Modifier.padding(8.dp),
-                    text = "Show USB Devices"
-                )
+//                CustomButton(
+//                    onClick = {
+//                        val intent = Intent(context, UsbDeviceActivity::class.java)
+//                        context.startActivity(intent)
+//                    },
+//                    modifier = Modifier.padding(8.dp),
+//                    text = "Show USB Devices"
+//                )
+
             }
         }
     }
@@ -189,7 +190,6 @@ fun MainActivityScreen(
 @Composable
 private fun MyAppContentPreview() {
     val dummySwitchState = remember { mutableStateOf(false) }
-
 
     InLockerTheme {
         MainActivityScreen(

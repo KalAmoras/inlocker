@@ -79,10 +79,8 @@ class MainActivity : ComponentActivity() {
         Log.d("MainActivity", "Running startForeground")
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val functionalities = listOf("service_switch", "critical_settings")
-                val missingPasswords = functionalities.filter { functionality ->
-                    val passwordItem = passwordDao.getPasswordItem(functionality)
-                    passwordItem?.password == null
+                val missingPasswords = listOf("service_switch", "critical_settings").filter {
+                    passwordDao.getPasswordItem(it)?.password == null
                 }
                 if (missingPasswords.isNotEmpty()) {
                     withContext(Dispatchers.Main) {
@@ -97,7 +95,7 @@ class MainActivity : ComponentActivity() {
                     monitorDao.insertMonitor(Monitor(id = 1, shouldMonitor = true))
                     sharedPreferences.edit().putBoolean(MONITOR_SWITCH, true).apply()
                     startMonitoringService()
-                    startPowerMonitoringService()
+//                    startPowerMonitoringService()
                 }
             } catch (e: Exception) {
                 Log.e("MainActivity", "Error in enableService", e)
@@ -131,7 +129,7 @@ class MainActivity : ComponentActivity() {
                             withContext(Dispatchers.Main) {
                                 val appMonitorIntent = Intent(this@MainActivity, AppMonitorService::class.java)
                                 stopService(appMonitorIntent)
-                                stopPowerMonitoringService()
+//                                stopPowerMonitoringService()
                                 showToast("Service stopped successfully")
                                 switchState.value = false
                             }
@@ -160,9 +158,8 @@ class MainActivity : ComponentActivity() {
                                     monitorDao.insertMonitor(Monitor(id = 1, shouldMonitor = true))
                                     sharedPreferences.edit().putBoolean(MONITOR_SWITCH, true).apply()
                                     startMonitoringService()
-                                    startPowerMonitoringService()
+//                                    startPowerMonitoringService()
                                     switchState.value = true
-
                                 }
                             } else {
                                 withContext(Dispatchers.Main) {
@@ -184,20 +181,13 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    private fun showToast(message: String) {
-            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-        }
-
-
     private fun startMonitoringService() {
         AuthStateManager.resetAuthState(applicationContext)
         lifecycleScope.launch(Dispatchers.IO) {
             val shouldMonitor = monitorDao.getMonitor()?.shouldMonitor ?: false
             sharedPreferences.edit().putBoolean(MONITOR_SWITCH, shouldMonitor).apply()
             val intent = Intent(this@MainActivity, AppMonitorService::class.java)
-//            startService(intent)
             startForegroundService(intent)
-
         }
     }
 
@@ -210,15 +200,21 @@ class MainActivity : ComponentActivity() {
         return state
     }
 
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
     private fun startPowerMonitoringService() {
         Log.d("MainActivity", "Starting PowerMonitoringService")
         val intent = Intent(this, PowerMonitorService::class.java)
+        intent.putExtra("monitor", true)
         ContextCompat.startForegroundService(this, intent)
     }
 
     private fun stopPowerMonitoringService() {
         Log.d("MainActivity", "Stopping PowerMonitoringService")
         val intent = Intent(this, PowerMonitorService::class.java)
+        intent.putExtra("monitor", false)
         stopService(intent)
     }
 

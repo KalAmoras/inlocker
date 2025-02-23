@@ -6,7 +6,7 @@ import androidx.room.RoomDatabase
 import androidx.room.Database
 
 
-@Database(entities = [PasswordItem::class, Monitor::class, LocationEntity::class], version = 3)
+@Database(entities = [PasswordItem::class, Monitor::class, LocationEntity::class], version = 3, exportSchema = false)
 abstract class PasswordDatabase : RoomDatabase() {
     abstract fun passwordDao(): PasswordDao
     abstract fun monitorDao(): MonitorDao

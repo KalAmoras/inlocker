@@ -92,16 +92,15 @@
             android:name=".InitializationService"
             android:permission="android.permission.FOREGROUND_SERVICE"/>
 
-        <service
-            android:name=".PowerMonitorService"
-            android:permission="android.permission.FOREGROUND_SERVICE"/>
-        <!--android:foregroundServiceType="connectedDevice"-->
-        <!--android:exported="false" -->
-
+                <service
+                    android:name=".PowerMonitorService"
+                    android:permission="android.permission.FOREGROUND_SERVICE"/>
 
         <service
             android:name=".FileMonitoringService"
             android:exported="false" />
+
+
 
         <activity
             android:name=".LockScreenActivity"
@@ -115,6 +114,8 @@
         <activity android:name=".AuthActivity" />
 
         <activity android:name=".EmailSettingsActivity" />
+
+
 
         <activity
             android:name=".AppListActivity"
@@ -138,8 +139,6 @@
 
         <activity android:name=".OptionsInstructionActivity" />
 
-        <activity android:name=".UsbDeviceActivity" />
-
         <receiver
             android:name=".BootReceiver"
             android:enabled="true"
@@ -154,23 +153,12 @@
             android:enabled="true"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.BATTERY_CHANGED" />
+<!--                <action android:name="android.intent.action.BATTERY_CHANGED" />-->
                 <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
                 <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </receiver>
-
-        <receiver android:name=".UsbReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.kalsys.inlocker.USB_PERMISSION" />
-                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"/>
-                <action android:name="android.hardware.usb.action.USB_DEVICE_DETACHED"/>
-            </intent-filter>
-        </receiver>
-
 
         <receiver
             android:name=".MyDeviceAdminReceiver"

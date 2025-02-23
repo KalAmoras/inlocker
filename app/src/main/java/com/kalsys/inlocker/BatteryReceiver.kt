@@ -13,10 +13,12 @@ class BatteryReceiver : BroadcastReceiver() {
     private var batteryLevelListener: BatteryLevelListener? = null
     private var chargingStatusListener: ChargingStatusListener? = null
 
+
+
     override fun onReceive(context: Context, intent: Intent) {
         Log.d("BatteryReceiver", "Received intent: ${intent.action}")
         when (intent.action) {
-            Intent.ACTION_BATTERY_CHANGED -> handleBatteryChange(intent)
+//            Intent.ACTION_BATTERY_CHANGED -> handleBatteryChange(intent)
             Intent.ACTION_POWER_CONNECTED -> {
                 Toast.makeText(context, "Power Connected", Toast.LENGTH_SHORT).show()
                 Log.d("BatteryReceiver", "Power Connected")
@@ -42,36 +44,21 @@ class BatteryReceiver : BroadcastReceiver() {
             Intent.ACTION_POWER_CONNECTED -> {
                 if (!isServiceRunning(context, FileMonitoringService::class.java)) {
                     Log.d("BatteryReceiver", "Starting FileMonitoringService")
-                    Toast.makeText(context, "Power connected. Monitoring started.", Toast.LENGTH_SHORT).show()
-//                    context.startService(Intent(context, FileMonitoringService::class.java))
+                    Toast.makeText(context, "Power connected. Monitoring started.", Toast.LENGTH_LONG).show()
                 }
             }
             Intent.ACTION_POWER_DISCONNECTED -> {
                 Log.d("BatteryReceiver", "Stopping FileMonitoringService")
-                Toast.makeText(context, "Power disconnected. Monitoring stopped.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Power disconnected. Monitoring stopped.", Toast.LENGTH_LONG).show()
             }
         }
     }
 
-    private fun handleBatteryChange(intent: Intent) {
-        val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-        val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-        val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
-        val chargePlug = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
-        val usbCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_USB
-        val acCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_AC
-
-        batteryLevelListener?.onBatteryLevelChanged(level)
-        chargingStatusListener?.onChargingStatusChanged(isCharging, usbCharge, acCharge)
+    private fun getSelectedProtocol(context: Context): String? {
+        val sharedPreferences = context.getSharedPreferences("protocol_preferences", Context.MODE_PRIVATE)
+        return sharedPreferences.getString("selected_protocol", null)
     }
 
-    fun setBatteryLevelListener(listener: BatteryLevelListener) {
-        this.batteryLevelListener = listener
-    }
-
-    fun setChargingStatusListener(listener: ChargingStatusListener) {
-        this.chargingStatusListener = listener
-    }
 
     private fun isServiceRunning(context: Context, serviceClass: Class<*>): Boolean {
         Log.d("BatteryReceiver", "Checking if ${serviceClass.simpleName} is running")
@@ -86,13 +73,6 @@ class BatteryReceiver : BroadcastReceiver() {
         return false
     }
 
-    fun registerForBatteryChange(context: Context) {
-        val intentFilter = IntentFilter().apply {
-            addAction(Intent.ACTION_BATTERY_CHANGED)
-        }
-        context.registerReceiver(this, intentFilter)
-        Log.d("BatteryReceiver", "Receiver registered for battery changes")
-    }
 
     fun unregister(context: Context) {
         try {
@@ -111,3 +91,4 @@ class BatteryReceiver : BroadcastReceiver() {
         fun onChargingStatusChanged(isCharging: Boolean, usbCharge: Boolean, acCharge: Boolean)
     }
 }
+
