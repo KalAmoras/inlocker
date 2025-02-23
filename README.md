@@ -3,8 +3,6 @@
 <!-- Generator: Adobe Illustrator 23.0.2, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
 <svg version="1.1" id="Layer_1" width="200" height="auto" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
 	 viewBox="0 0 106.6 144.6" style="enable-background:new 0 0 106.6 144.6;" xml:space="preserve">
-<style type="text/css">
-	.st0{fill:#052867;}
 </style>
 <g>
 	<g>
@@ -41,12 +39,16 @@ to the email address previously selected by the user, along with the device loca
 The app also gives the option of setting the app as a device administrator, blocking uninstalling
 if the malicious user tries to uninstall to remove the overlaying effect.
 
+<img src="https://github.com/user-attachments/assets/d8b3ebfd-e0f9-431f-b4f4-cc52b0c0c2e7" alt="Critical Settings" width="300"/>
+
 ![Critical Settings](https://github.com/user-attachments/assets/d8b3ebfd-e0f9-431f-b4f4-cc52b0c0c2e7)
 
 obs: Email services won't work right now because it is still in testing and developing. You might want to use your own Gmail API to send emails to your chosen address.
 
 This app asks for some permissions which the user may find invasive but after specific android updates, apps must ask the user for permissions
 such as Accessibility and Display Pop-up Overlays to function as intended. 
+
+<img src="https://github.com/user-attachments/assets/fc34eecf-9e9f-4b19-9aef-55ea8590e600" alt="Accessibility" width="300"/>
 
 ![accessibility](https://github.com/user-attachments/assets/fc34eecf-9e9f-4b19-9aef-55ea8590e600)
 
