@@ -1,20 +1,22 @@
 # **InLocker**
 
 
-<img src="https://github.com/user-attachments/assets/99000a8e-3663-4078-8c5e-ceff9ebff249" alt="Inlocker Logo" width="200px">  
+<img src="https://github.com/user-attachments/assets/99000a8e-3663-4078-8c5e-ceff9ebff249" alt="Inlocker Logo" width="200px"> <br>
+
 
 
 
 <br>
-This app was developed on Kotlin for Android devices.  
+This app was developed on Kotlin for Android devices.<br>
+  
 
 Inlocker can set passwords for every app the user has installed in their devices,
 for when they are accessed by malicious user an overlay screen will block their access without the set password.
-Passwords can be set individually or just one for all the apps, whichever the user desires.
+Passwords can be set individually or just one for all the apps, whichever the user desires.<br>
 
-<br>
-<img src="https://github.com/user-attachments/assets/a18d1081-114f-4cee-bbbe-729764cd916e" alt="App List" width="300"/>
-<br>
+
+<img src="https://github.com/user-attachments/assets/a18d1081-114f-4cee-bbbe-729764cd916e" alt="App List" width="300"/><br>
+
 
 When the malicious user inputs a wrong password, the camera will take a frontal picture and send it
 to the email address previously selected by the user, along with the device location in coordinates.
